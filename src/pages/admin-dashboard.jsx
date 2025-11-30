@@ -46,6 +46,13 @@ const AdminDashboard = () => {
     const [showAddAdminModal, setShowAddAdminModal] = useState(false);
     const [newAdmin, setNewAdmin] = useState({ admin_id: '', name: '', department: '', password: '' });
 
+    // Edit State
+    const [editingStudent, setEditingStudent] = useState(null);
+    const [editingGuard, setEditingGuard] = useState(null);
+    const [editingLocation, setEditingLocation] = useState(null);
+    const [editingLog, setEditingLog] = useState(null);
+    const [editingAdmin, setEditingAdmin] = useState(null);
+
     // Profile & Overview State
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [logsToday, setLogsToday] = useState(0);
@@ -68,7 +75,13 @@ const AdminDashboard = () => {
         // Optimization: check if logs are already populated? 
         // But logs might change, so fetching fresh is safer.
         try {
-            const res = await fetch('http://localhost:3000/api/admin/logs', { credentials: 'include' });
+            const res = await fetch('http://localhost:3000/api/admin/logs', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",
+            });
             if (res.ok) {
                 const allLogs = await res.json();
                 setLogs(allLogs); // Update logs state as well
@@ -111,7 +124,7 @@ const AdminDashboard = () => {
 
     const fetchLocations = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/locations', { credentials: 'include' });
+            const res = await fetch('http://localhost:3000/api/admin/locations', { method: "GET", credentials: 'include' });
             if (res.ok) setLocations(await res.json());
         } catch (err) { console.error(err); }
     };
@@ -137,9 +150,11 @@ const AdminDashboard = () => {
 
     const handleAddStudent = async (e) => {
         e.preventDefault();
+        const url = editingStudent ? `http://localhost:3000/api/admin/update-student/${newStudent.roll_no}` : 'http://localhost:3000/api/admin/add-student';
+        const method = editingStudent ? 'PUT' : 'POST';
         try {
-            const res = await fetch('http://localhost:3000/api/admin/add-student', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newStudent),
                 credentials: 'include'
@@ -147,16 +162,19 @@ const AdminDashboard = () => {
             if (res.ok) {
                 setShowAddModal(false);
                 setNewStudent({ roll_no: '', name: '', email: '', hostel_name: '', password: '' });
+                setEditingStudent(null);
                 fetchStudents();
-            } else { alert('Failed to add student'); }
-        } catch (err) { console.error(err); alert('Error adding student'); }
+            } else { alert('Failed to save student'); }
+        } catch (err) { console.error(err); alert('Error saving student'); }
     };
 
     const handleAddGuard = async (e) => {
         e.preventDefault();
+        const url = editingGuard ? `http://localhost:3000/api/admin/update-guard/${newGuard.guard_id}` : 'http://localhost:3000/api/admin/add-guard';
+        const method = editingGuard ? 'PUT' : 'POST';
         try {
-            const res = await fetch('http://localhost:3000/api/admin/add-guard', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newGuard),
                 credentials: 'include'
@@ -164,16 +182,19 @@ const AdminDashboard = () => {
             if (res.ok) {
                 setShowAddGuardModal(false);
                 setNewGuard({ guard_id: '', guard_name: '', password: '' });
+                setEditingGuard(null);
                 fetchGuards();
-            } else { alert('Failed to add guard'); }
-        } catch (err) { console.error(err); alert('Error adding guard'); }
+            } else { alert('Failed to save guard'); }
+        } catch (err) { console.error(err); alert('Error saving guard'); }
     };
 
     const handleAddLocation = async (e) => {
         e.preventDefault();
+        const url = editingLocation ? `http://localhost:3000/api/admin/update-location/${newLocation.place_id}` : 'http://localhost:3000/api/admin/add-location';
+        const method = editingLocation ? 'PUT' : 'POST';
         try {
-            const res = await fetch('http://localhost:3000/api/admin/add-location', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newLocation),
                 credentials: 'include'
@@ -181,16 +202,19 @@ const AdminDashboard = () => {
             if (res.ok) {
                 setShowAddLocationModal(false);
                 setNewLocation({ place_id: '', place_name: '' });
+                setEditingLocation(null);
                 fetchLocations();
-            } else { alert('Failed to add location'); }
-        } catch (err) { console.error(err); alert('Error adding location'); }
+            } else { alert('Failed to save location'); }
+        } catch (err) { console.error(err); alert('Error saving location'); }
     };
 
     const handleAddLog = async (e) => {
         e.preventDefault();
+        const url = editingLog ? `http://localhost:3000/api/admin/update-log` : 'http://localhost:3000/api/admin/add-log';
+        const method = editingLog ? 'PUT' : 'POST';
         try {
-            const res = await fetch('http://localhost:3000/api/admin/add-log', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newLog),
                 credentials: 'include'
@@ -198,16 +222,19 @@ const AdminDashboard = () => {
             if (res.ok) {
                 setShowAddLogModal(false);
                 setNewLog({ roll_no: '', guard_id: '', place_id: '', log_type: 'Entry' });
+                setEditingLog(null);
                 fetchLogs();
-            } else { alert('Failed to add log'); }
-        } catch (err) { console.error(err); alert('Error adding log'); }
+            } else { alert('Failed to save log'); }
+        } catch (err) { console.error(err); alert('Error saving log'); }
     };
 
     const handleAddAdmin = async (e) => {
         e.preventDefault();
+        const url = editingAdmin ? `http://localhost:3000/api/admin/update-admin/${newAdmin.admin_id}` : 'http://localhost:3000/api/admin/add-admin';
+        const method = editingAdmin ? 'PUT' : 'POST';
         try {
-            const res = await fetch('http://localhost:3000/api/admin/add-admin', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newAdmin),
                 credentials: 'include'
@@ -215,9 +242,87 @@ const AdminDashboard = () => {
             if (res.ok) {
                 setShowAddAdminModal(false);
                 setNewAdmin({ admin_id: '', name: '', department: '', password: '' });
+                setEditingAdmin(null);
                 fetchAdmins();
-            } else { alert('Failed to add admin'); }
-        } catch (err) { console.error(err); alert('Error adding admin'); }
+            } else { alert('Failed to save admin'); }
+        } catch (err) { console.error(err); alert('Error saving admin'); }
+    };
+
+    // Delete Handlers
+    const handleDeleteStudent = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this student?')) return;
+        try {
+            await fetch(`http://localhost:3000/api/admin/delete-student/${id}`, { method: 'DELETE', credentials: 'include' });
+            fetchStudents();
+        } catch (err) { console.error(err); }
+    };
+
+    const handleDeleteGuard = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this guard?')) return;
+        try {
+            await fetch(`http://localhost:3000/api/admin/delete-guard/${id}`, { method: 'DELETE', credentials: 'include' });
+            fetchGuards();
+        } catch (err) { console.error(err); }
+    };
+
+    const handleDeleteLocation = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this location?')) return;
+        try {
+            await fetch(`http://localhost:3000/api/admin/delete-location/${id}`, { method: 'DELETE', credentials: 'include' });
+            fetchLocations();
+        } catch (err) { console.error(err); }
+    };
+
+    const handleDeleteLog = async (log) => {
+        if (!window.confirm('Are you sure you want to delete this log?')) return;
+        try {
+            await fetch(`http://localhost:3000/api/admin/delete-log`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roll_no: log.roll_no, guard_id: log.guard_id, place_id: log.place_id }),
+                credentials: 'include'
+            });
+            fetchLogs();
+        } catch (err) { console.error(err); }
+    };
+
+    const handleDeleteAdmin = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this admin?')) return;
+        try {
+            await fetch(`http://localhost:3000/api/admin/delete-admin/${id}`, { method: 'DELETE', credentials: 'include' });
+            fetchAdmins();
+        } catch (err) { console.error(err); }
+    };
+
+    // Edit Handlers
+    const startEditStudent = (student) => {
+        setNewStudent(student);
+        setEditingStudent(true);
+        setShowAddModal(true);
+    };
+
+    const startEditGuard = (guard) => {
+        setNewGuard(guard);
+        setEditingGuard(true);
+        setShowAddGuardModal(true);
+    };
+
+    const startEditLocation = (location) => {
+        setNewLocation(location);
+        setEditingLocation(true);
+        setShowAddLocationModal(true);
+    };
+
+    const startEditLog = (log) => {
+        setNewLog(log);
+        setEditingLog(true);
+        setShowAddLogModal(true);
+    };
+
+    const startEditAdmin = (admin) => {
+        setNewAdmin(admin);
+        setEditingAdmin(true);
+        setShowAddAdminModal(true);
     };
 
     const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.roll_no.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -277,10 +382,16 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <table className="student-table">
-                        <thead><tr><th>Roll No</th><th>Name</th><th>Email</th><th>Hostel</th><th>Password</th></tr></thead>
+                        <thead><tr><th>Roll No</th><th>Name</th><th>Email</th><th>Hostel</th><th>Password</th><th>Actions</th></tr></thead>
                         <tbody>
                             {filteredStudents.map((student) => (
-                                <tr key={student.roll_no}><td>{student.roll_no}</td><td>{student.name}</td><td>{student.email}</td><td>{student.hostel_name}</td><td>{student.password}</td></tr>
+                                <tr key={student.roll_no}>
+                                    <td>{student.roll_no}</td><td>{student.name}</td><td>{student.email}</td><td>{student.hostel_name}</td><td>{student.password}</td>
+                                    <td>
+                                        <button className="btn btn-primary small" onClick={() => startEditStudent(student)}>Edit</button>
+                                        <button className="btn btn-danger small" onClick={() => handleDeleteStudent(student.roll_no)}>Delete</button>
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -297,10 +408,16 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <table className="student-table">
-                        <thead><tr><th>Guard ID</th><th>Name</th><th>Assigned Place</th><th>Password</th></tr></thead>
+                        <thead><tr><th>Guard ID</th><th>Name</th><th>Assigned Place</th><th>Password</th><th>Actions</th></tr></thead>
                         <tbody>
                             {filteredGuards.map((guard) => (
-                                <tr key={guard.guard_id}><td>{guard.guard_id}</td><td>{guard.guard_name}</td><td>{guard.place_id}</td><td>{guard.password}</td></tr>
+                                <tr key={guard.guard_id}>
+                                    <td>{guard.guard_id}</td><td>{guard.guard_name}</td><td>{guard.place_id}</td><td>{guard.password}</td>
+                                    <td>
+                                        <button className="btn btn-primary small" onClick={() => startEditGuard(guard)}>Edit</button>
+                                        <button className="btn btn-danger small" onClick={() => handleDeleteGuard(guard.guard_id)}>Delete</button>
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -317,10 +434,16 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <table className="student-table">
-                        <thead><tr><th>Place ID</th><th>Place Name</th></tr></thead>
+                        <thead><tr><th>Place ID</th><th>Place Name</th><th>Actions</th></tr></thead>
                         <tbody>
                             {filteredLocations.map((loc) => (
-                                <tr key={loc.place_id}><td>{loc.place_id}</td><td>{loc.place_name}</td></tr>
+                                <tr key={loc.place_id}>
+                                    <td>{loc.place_id}</td><td>{loc.place_name}</td>
+                                    <td>
+                                        <button className="btn btn-primary small" onClick={() => startEditLocation(loc)}>Edit</button>
+                                        <button className="btn btn-danger small" onClick={() => handleDeleteLocation(loc.place_id)}>Delete</button>
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -337,13 +460,17 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <table className="student-table">
-                        <thead><tr><th>Roll No</th><th>Guard ID</th><th>Place</th><th>Type</th><th>Time</th></tr></thead>
+                        <thead><tr><th>Roll No</th><th>Guard ID</th><th>Place</th><th>Type</th><th>Time</th><th>Actions</th></tr></thead>
                         <tbody>
                             {filteredLogs.map((log, i) => (
                                 <tr key={i}>
                                     <td>{log.roll_no}</td><td>{log.guard_id}</td><td>{log.place_id}</td>
                                     <td><span className={log.log_type === 'Entry' ? 'badge-success' : 'badge-warning'}>{log.log_type}</span></td>
                                     <td>{new Date(log.timestamp).toLocaleString()}</td>
+                                    <td>
+                                        <button className="btn btn-primary small" onClick={() => startEditLog(log)}>Edit</button>
+                                        <button className="btn btn-danger small" onClick={() => handleDeleteLog(log)}>Delete</button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -361,10 +488,16 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                     <table className="student-table">
-                        <thead><tr><th>Admin ID</th><th>Name</th><th>Department</th><th>Password</th></tr></thead>
+                        <thead><tr><th>Admin ID</th><th>Name</th><th>Department</th><th>Password</th><th>Actions</th></tr></thead>
                         <tbody>
                             {filteredAdmins.map((admin) => (
-                                <tr key={admin.admin_id}><td>{admin.admin_id}</td><td>{admin.name}</td><td>{admin.department}</td><td>{admin.password}</td></tr>
+                                <tr key={admin.admin_id}>
+                                    <td>{admin.admin_id}</td><td>{admin.name}</td><td>{admin.department}</td><td>{admin.password}</td>
+                                    <td>
+                                        <button className="btn btn-primary small" onClick={() => startEditAdmin(admin)}>Edit</button>
+                                        <button className="btn btn-danger small" onClick={() => handleDeleteAdmin(admin.admin_id)}>Delete</button>
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -377,12 +510,12 @@ const AdminDashboard = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header"><h3>Add New Student</h3><button className="close-btn" onClick={() => setShowAddModal(false)}>×</button></div>
                         <form className="modal-form" onSubmit={handleAddStudent}>
-                            <input type="text" placeholder="Roll Number" required value={newStudent.roll_no} onChange={e => setNewStudent({ ...newStudent, roll_no: e.target.value })} />
+                            <input type="text" placeholder="Roll Number" required value={newStudent.roll_no} onChange={e => setNewStudent({ ...newStudent, roll_no: e.target.value })} disabled={!!editingStudent} />
                             <input type="text" placeholder="Full Name" required value={newStudent.name} onChange={e => setNewStudent({ ...newStudent, name: e.target.value })} />
                             <input type="email" placeholder="Email Address" required value={newStudent.email} onChange={e => setNewStudent({ ...newStudent, email: e.target.value })} />
                             <input type="text" placeholder="Hostel Name" required value={newStudent.hostel_name} onChange={e => setNewStudent({ ...newStudent, hostel_name: e.target.value })} />
                             <input type="password" placeholder="Password" required value={newStudent.password} onChange={e => setNewStudent({ ...newStudent, password: e.target.value })} />
-                            <button type="submit" className="btn btn-primary full">Add Student</button>
+                            <button type="submit" className="btn btn-primary full">{editingStudent ? 'Save Changes' : 'Add Student'}</button>
                         </form>
                     </div>
                 </div>
@@ -393,11 +526,11 @@ const AdminDashboard = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header"><h3>Add New Guard</h3><button className="close-btn" onClick={() => setShowAddGuardModal(false)}>×</button></div>
                         <form className="modal-form" onSubmit={handleAddGuard}>
-                            <input type="text" placeholder="Guard ID" required value={newGuard.guard_id} onChange={e => setNewGuard({ ...newGuard, guard_id: e.target.value })} />
+                            <input type="text" placeholder="Guard ID" required value={newGuard.guard_id} onChange={e => setNewGuard({ ...newGuard, guard_id: e.target.value })} disabled={!!editingGuard} />
                             <input type="text" placeholder="Guard Name" required value={newGuard.guard_name} onChange={e => setNewGuard({ ...newGuard, guard_name: e.target.value })} />
 
                             <input type="password" placeholder="Password" required value={newGuard.password} onChange={e => setNewGuard({ ...newGuard, password: e.target.value })} />
-                            <button type="submit" className="btn btn-primary full">Add Guard</button>
+                            <button type="submit" className="btn btn-primary full">{editingGuard ? 'Save Changes' : 'Add Guard'}</button>
                         </form>
                     </div>
                 </div>
@@ -408,9 +541,9 @@ const AdminDashboard = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header"><h3>Add New Location</h3><button className="close-btn" onClick={() => setShowAddLocationModal(false)}>×</button></div>
                         <form className="modal-form" onSubmit={handleAddLocation}>
-                            <input type="text" placeholder="Place ID" required value={newLocation.place_id} onChange={e => setNewLocation({ ...newLocation, place_id: e.target.value })} />
+                            <input type="text" placeholder="Place ID" required value={newLocation.place_id} onChange={e => setNewLocation({ ...newLocation, place_id: e.target.value })} disabled={!!editingLocation} />
                             <input type="text" placeholder="Place Name" required value={newLocation.place_name} onChange={e => setNewLocation({ ...newLocation, place_name: e.target.value })} />
-                            <button type="submit" className="btn btn-primary full">Add Location</button>
+                            <button type="submit" className="btn btn-primary full">{editingLocation ? 'Save Changes' : 'Add Location'}</button>
                         </form>
                     </div>
                 </div>
@@ -421,14 +554,14 @@ const AdminDashboard = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header"><h3>Add New Log</h3><button className="close-btn" onClick={() => setShowAddLogModal(false)}>×</button></div>
                         <form className="modal-form" onSubmit={handleAddLog}>
-                            <input type="text" placeholder="Roll Number" required value={newLog.roll_no} onChange={e => setNewLog({ ...newLog, roll_no: e.target.value })} />
-                            <input type="text" placeholder="Guard ID" required value={newLog.guard_id} onChange={e => setNewLog({ ...newLog, guard_id: e.target.value })} />
-                            <input type="text" placeholder="Place ID" required value={newLog.place_id} onChange={e => setNewLog({ ...newLog, place_id: e.target.value })} />
+                            <input type="text" placeholder="Roll Number" required value={newLog.roll_no} onChange={e => setNewLog({ ...newLog, roll_no: e.target.value })} disabled={!!editingLog} />
+                            <input type="text" placeholder="Guard ID" required value={newLog.guard_id} onChange={e => setNewLog({ ...newLog, guard_id: e.target.value })} disabled={!!editingLog} />
+                            <input type="text" placeholder="Place ID" required value={newLog.place_id} onChange={e => setNewLog({ ...newLog, place_id: e.target.value })} disabled={!!editingLog} />
                             <select value={newLog.log_type} onChange={e => setNewLog({ ...newLog, log_type: e.target.value })}>
                                 <option value="Entry">Entry</option>
                                 <option value="Exit">Exit</option>
                             </select>
-                            <button type="submit" className="btn btn-primary full">Add Log</button>
+                            <button type="submit" className="btn btn-primary full">{editingLog ? 'Save Changes' : 'Add Log'}</button>
                         </form>
                     </div>
                 </div>
@@ -439,11 +572,11 @@ const AdminDashboard = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header"><h3>Add New Admin</h3><button className="close-btn" onClick={() => setShowAddAdminModal(false)}>×</button></div>
                         <form className="modal-form" onSubmit={handleAddAdmin}>
-                            <input type="text" placeholder="Admin ID" required value={newAdmin.admin_id} onChange={e => setNewAdmin({ ...newAdmin, admin_id: e.target.value })} />
+                            <input type="text" placeholder="Admin ID" required value={newAdmin.admin_id} onChange={e => setNewAdmin({ ...newAdmin, admin_id: e.target.value })} disabled={!!editingAdmin} />
                             <input type="text" placeholder="Name" required value={newAdmin.name} onChange={e => setNewAdmin({ ...newAdmin, name: e.target.value })} />
                             <input type="text" placeholder="Department" required value={newAdmin.department} onChange={e => setNewAdmin({ ...newAdmin, department: e.target.value })} />
                             <input type="password" placeholder="Password" required value={newAdmin.password} onChange={e => setNewAdmin({ ...newAdmin, password: e.target.value })} />
-                            <button type="submit" className="btn btn-primary full">Add Admin</button>
+                            <button type="submit" className="btn btn-primary full">{editingAdmin ? 'Save Changes' : 'Add Admin'}</button>
                         </form>
                     </div>
                 </div>

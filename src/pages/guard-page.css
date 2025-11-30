@@ -1,7 +1,5 @@
 /* Guard Page Styles - Based on Admin Dashboard */
 
-/* Reusing variables and base styles would be ideal, but for isolation we'll define necessary ones here or assume global styles */
-
 .guard-container {
     position: fixed;
     top: 0;
@@ -137,6 +135,7 @@
 }
 
 .guard-logout-btn {
+    /* Deprecated in favor of top-right button, but keeping for reference if needed */
     width: 100%;
     max-width: 400px;
     padding: 1.5rem;
@@ -153,4 +152,57 @@
 .guard-logout-btn:hover {
     background: #ef4444;
     color: white;
+}
+
+.guard-top-logout-btn {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 2rem;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 1001;
+}
+
+.guard-top-logout-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.guard-action-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    border-radius: 16px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    margin-top: 2rem;
+}
+
+.guard-action-btn:hover {
+    background: #6366f1;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+}
+
+.guard-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    align-items: center;
 }
