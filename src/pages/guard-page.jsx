@@ -1,5 +1,6 @@
 import React, { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import QRCodeReactOnly from './qr-code.jsx';
 import './guard-page.css';
 
 const GuardPage = () => {
@@ -103,18 +104,18 @@ const GuardPage = () => {
                 <div className="guard-summary">
                     <h2 className="guard-success-title">Guard</h2>
                     <div className="guard-details">
-                        <p className="guard-info">
+                        <div className="guard-info">
                             <strong>Guard ID:</strong> {user.userGuardId}<br/>
                             <strong>Guard Name:</strong> {user.userName}<br/>
                             <strong>Location:</strong> {selectedLocation}
-                        </p>
+                            <div className="qrCode"><QRCodeReactOnly str1={user.userGuardId} str2={selectedLocation} /></div>
+                            <button
+                            className="guard-action-btn"
+                            onClick={() => setSubmitted(false)}>
+                            Change Location
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        className="guard-action-btn"
-                        onClick={() => setSubmitted(false)}
-                    >
-                        Change Location
-                    </button>
                 </div>
             )}
         </div>
