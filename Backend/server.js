@@ -213,6 +213,7 @@ app.post("/api/logout",(req,res)=>{
         res.clearCookie("connect.sid");
         res.json({message:"Logged out"});
     });
+    window.location.href="\login";
 });
 
 const port=3000;
