@@ -1,11 +1,17 @@
 import './App.css'
+import {Routes, Route,Navigate, BrowserRouter} from 'react-router-dom'
+import LoginPage from './pages/login.jsx'
+import DashboardPage from './pages/dashboard.jsx'
 
 function App() {
-
   return (
-    <>
-        <h2>Start working</h2>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LoginPage/>}/>
+        <Route path="/login" element={<LoginPage/>}/>
+        <Route path="/dashboard" element={<DashboardPage/>}/> 
+      </Routes>
+    </BrowserRouter>
   )
 }
 
