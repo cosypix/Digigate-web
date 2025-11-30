@@ -1,0 +1,253 @@
+/* Student Dashboard Styles */
+
+.student-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    z-index: 1000;
+}
+
+/* Profile Section */
+.student-profile-section {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    padding: 0.8rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.student-profile-section:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: #6366f1;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.profile-text {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Main Card Container */
+.student-card {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.student-title {
+    font-size: 3.5rem;
+    margin-bottom: 3rem;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+    font-weight: 700;
+}
+
+.student-content-wrapper {
+    width: 90%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    align-items: center;
+}
+
+/* Entry/Exit Cards Container */
+.action-cards-container {
+    display: flex;
+    gap: 2rem;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-card {
+    flex: 1;
+    min-width: 280px;
+    max-width: 400px;
+    height: 250px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-10px);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.action-card:hover::before {
+    opacity: 1;
+}
+
+.action-card.entry-card:hover {
+    background: rgba(34, 197, 94, 0.15);
+    /* Green tint */
+    border-color: #22c55e;
+}
+
+.action-card.exit-card:hover {
+    background: rgba(239, 68, 68, 0.15);
+    /* Red tint */
+    border-color: #ef4444;
+}
+
+.card-icon {
+    font-size: 4rem;
+}
+
+.card-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.card-desc {
+    font-size: 1rem;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* Attendance Section */
+.attendance-container {
+    width: 100%;
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2rem;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.attendance-title {
+    color: #e2e8f0;
+    font-size: 1.5rem;
+    margin: 0;
+    text-align: center;
+}
+
+.student-select {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.student-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.student-select option {
+    background: #1e293b;
+    color: #fff;
+}
+
+.attendance-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.attendance-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+/* Message Toast */
+.message-toast {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(34, 197, 94, 0.9);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 2000;
+    animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        top: -50px;
+        opacity: 0;
+    }
+
+    to {
+        top: 100px;
+        opacity: 1;
+    }
+}

@@ -74,10 +74,11 @@ app.post("/api/login", async (req, res) => {
             [username, password]
         );
 
-        if (studentResult.rows.length > 0) {
-            const user = studentResult.rows[0];
-            req.session.user = {
-                username: user.roll_no,
+        if(studentResult.rows.length > 0) {
+            const user=studentResult.rows[0];
+            req.session.user={
+                userRollNo:user.roll_no,
+                userName:user.name,
                 role: 'student'
             };
             client.release();
@@ -93,11 +94,28 @@ app.post("/api/login", async (req, res) => {
         if (adminResult.rows.length > 0) {
             const user = adminResult.rows[0];
             req.session.user = {
-                username: user.admin_id,
+                userAdminId: user.admin_id,
+                userName:user.name,
                 role: 'admin'
             };
             client.release();
-            return res.json({ message: "Login Successful", user: req.session.user, role: 'admin' });
+            return res.json({message: "Login Successful", user: req.session.user, role: 'admin'});
+        }   
+
+        // Check Guard 
+        const guardResult = await client.query(
+            "Select * from Guard where Guard_Id=$1 and password=$2",
+            [username, password]
+        );
+        if(guardResult.rows.length > 0) {
+            const user = guardResult.rows[0];
+            req.session.user = {
+                userGuardId: user.guard_id,
+                userName:user.guard_name,
+                role: 'guard'
+            };
+            client.release();
+            return res.json({message: "Login Successful", user: req.session.user, role: 'guard'});
         }
 
         client.release();
@@ -201,6 +219,19 @@ app.post("/api/admin/logs", isAdmin, async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         console.error(err);
+//Update Guard Location
+app.post("/api/guard/location",async(req,res)=>{
+    console.log("POST /api/guard/location received");
+    console.log("Request body:", req.body);
+    const{guardId,location}=req.body;
+    try{
+        const client=await pool.connect();
+        await client.query("UPDATE Guard SET place_id=$1 WHERE guard_id=$2",[location,guardId]);
+        client.release();
+        console.log("Location updated successfully for guard:", guardId);
+        res.json({message:"Location Updated Successfully"});
+    } catch (err) { 
+        console.error("Error updating location:", err);
         res.status(500).json({ error: "Server Error" });
     }
 });
