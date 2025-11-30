@@ -1,0 +1,156 @@
+/* Guard Page Styles - Based on Admin Dashboard */
+
+/* Reusing variables and base styles would be ideal, but for isolation we'll define necessary ones here or assume global styles */
+
+.guard-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    /* Dark admin-like background */
+    z-index: 1000;
+}
+
+.guard-card {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.guard-title {
+    font-size: 4rem;
+    margin-bottom: 3rem;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+    font-weight: 700;
+}
+
+.guard-form {
+    width: 90%;
+    max-width: 800px;
+    /* Large width for full page feel */
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    padding: 5rem;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.guard-form-title {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: #e2e8f0;
+    /* Light text */
+    font-weight: 600;
+}
+
+.guard-input {
+    width: 100%;
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.guard-input:focus {
+    border-color: #6366f1;
+    /* Primary color */
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.guard-input option {
+    background: #1e293b;
+    color: #fff;
+}
+
+.guard-submit-btn {
+    width: 100%;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    /* Primary gradient */
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+}
+
+.guard-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+    filter: brightness(1.1);
+}
+
+.guard-summary {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    padding: 6rem;
+    border-radius: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 600px;
+    max-width: 900px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.guard-success-title {
+    color: #22c55e;
+    /* Success color */
+    margin-bottom: 3rem;
+    font-size: 3.5rem;
+    font-weight: 700;
+}
+
+.guard-info {
+    margin-bottom: 4rem;
+    text-align: center;
+    font-size: 2rem;
+    color: #f1f5f9;
+}
+
+.guard-logout-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    border-radius: 16px;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.guard-logout-btn:hover {
+    background: #ef4444;
+    color: white;
+}
