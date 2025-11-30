@@ -89,7 +89,6 @@ app.post("/api/login",async(req,res)=>{
             "Select * from Admin where Admin_Id=$1 and password=$2",
             [username, password]
         );
-
         if(adminResult.rows.length > 0) {
             const user = adminResult.rows[0];
             req.session.user = {
@@ -98,6 +97,21 @@ app.post("/api/login",async(req,res)=>{
             };
             client.release();
             return res.json({message: "Login Successful", user: req.session.user, role: 'admin'});
+        }   
+
+        // Check Guard 
+        const guardResult = await client.query(
+            "Select * from Guard where Guard_Id=$1 and password=$2",
+            [username, password]
+        );
+        if(guardResult.rows.length > 0) {
+            const user = guardResult.rows[0];
+            req.session.user = {
+                username: user.guard_id,
+                role: 'guard'
+            };
+            client.release();
+            return res.json({message: "Login Successful", user: req.session.user, role: 'guard'});
         }
 
         client.release();
