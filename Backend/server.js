@@ -441,6 +441,108 @@ app.post("/api/logout", (req, res) => {
     });
 });
 
+// Mark Attendance
+app.post("/api/mark-attendance", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'student') {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { guard_id, place_id, qr_timestamp, scan_type } = req.body; // scan_type: 'Entry' or 'Exit'
+    const roll_no = req.session.user.userRollNo;
+
+    if (!guard_id || !place_id || !qr_timestamp || !scan_type) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // 1. Replay Protection (30s window)
+    const serverTime = Date.now();
+    const qrTime = new Date(qr_timestamp).getTime();
+    const timeDiff = Math.abs(serverTime - qrTime);
+
+    if (timeDiff > 30000) { // 30 seconds
+        return res.status(400).json({ error: "QR Code Expired. Please scan again." });
+    }
+
+    try {
+        const client = await pool.connect();
+
+        // 2. State Validation (Prevent Double Entry/Exit)
+        const lastLogResult = await client.query(
+            "SELECT log_type FROM Log WHERE roll_no = $1 AND Place_Id = $2 ORDER BY Timestamp DESC LIMIT 1",
+            [roll_no, place_id]
+        );
+
+        const lastLogType = lastLogResult.rows.length > 0 ? lastLogResult.rows[0].log_type : null;
+        
+        // Check if last log type ends with 'Entry' or 'Exit' to handle prefixes like AEntry, MGEntry
+        const isLastEntry = lastLogType && lastLogType.endsWith('Entry');
+        const isLastExit = lastLogType && lastLogType.endsWith('Exit');
+
+        if (scan_type === 'Entry') {
+            if (isLastEntry) {
+                client.release();
+                return res.status(400).json({ error: "You are already marked as Entered at this location. Please Exit first." });
+            }
+        } else if (scan_type === 'Exit') {
+            if (!isLastEntry) { // Must have entered to exit (or if no history, assume not entered)
+                client.release();
+                return res.status(400).json({ error: "You are not marked as Entered at this location. Please Enter first." });
+            }
+        }
+
+        // 3. Log Type Determination
+        const locationResult = await client.query("SELECT Place_Name FROM Location WHERE Place_Id = $1", [place_id]);
+        
+        if (locationResult.rows.length === 0) {
+            client.release();
+            return res.status(400).json({ error: "Invalid Location" });
+        }
+
+        const placeName = locationResult.rows[0].place_name;
+        let prefix = "";
+
+        // Check for specific location types
+        // Assuming hostel names are known or contain "Hostel" - adjusting based on user plan "Hostel -> A"
+        // The plan listed specific hostel names: Aryabhatta, Panini, etc.
+        // Let's check for "Main Gate" first
+        if (placeName.toLowerCase().includes("main gate")) {
+            prefix = "MG";
+        } else {
+            // Check if it's a hostel. 
+            // We can check against a list or if it doesn't match Main Gate, assume Hostel? 
+            // Or better, check if it's NOT Main Gate and NOT Library/etc if those exist.
+            // For now, let's assume if it's not Main Gate, it might be a hostel or generic.
+            // The prompt said: Hostel -> A, Main Gate -> MG, Other -> No Prefix.
+            // Let's check for known hostels or just default to A if it looks like a hostel name.
+            // Simplified logic: If not Main Gate, check if it is in the hostel list or contains "Hostel".
+            // Since I don't have the full list of places, I'll use a heuristic:
+            // If it's "Main Gate" -> MG.
+            // If it's one of the known hostels (Aryabhatta, Panini, etc) -> A.
+            // Else -> ""
+            const knownHostels = ["aryabhatta", "maa saraswati", "vashistha", "vivekananda", "panini", "nagarjuna"];
+            if (knownHostels.some(h => placeName.toLowerCase().includes(h))) {
+                prefix = "A";
+            }
+        }
+
+        const finalLogType = `${prefix}${scan_type}`;
+
+        // 4. Insert Log
+        const timestamp = new Date();
+        await client.query(
+            "INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) VALUES ($1, $2, $3, $4, $5)",
+            [roll_no, guard_id, place_id, finalLogType, timestamp]
+        );
+
+        client.release();
+        res.json({ message: `${scan_type} Marked Successfully`, log_type: finalLogType });
+
+    } catch (err) {
+        console.error("Error marking attendance:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
 const port = 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);

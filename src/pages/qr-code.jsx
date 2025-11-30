@@ -26,82 +26,82 @@ Notes:
 
 // -------------------- QRCodeReactOnly component --------------------
 function QRCodeReactOnly({
-str1 = 'STRING_1',
-str2 = 'STRING_2',
-autoRefresh = true,
-refreshInterval = 5000,
+    str1 = 'STRING_1',
+    str2 = 'STRING_2',
+    autoRefresh = true,
+    refreshInterval = 5000,
 }) {
-// timestamp in milliseconds
-const [timestamp, setTimestamp] = useState(() => Date.now());
+    // timestamp in milliseconds
+    const [timestamp, setTimestamp] = useState(() => Date.now());
 
 
-// holds generated image data URL
-const [dataUrl, setDataUrl] = useState('');
+    // holds generated image data URL
+    const [dataUrl, setDataUrl] = useState('');
 
 
-// generate the QR whenever timestamp/str1/str2 change
-useEffect(() => {
-// Build a JSON payload (stringified) so scanners receive JSON
-const payloadObj = { ts: timestamp, a: str1, b: str2 };
-const payload = JSON.stringify(payloadObj);
+    // generate the QR whenever timestamp/str1/str2 change
+    useEffect(() => {
+        // Build a JSON payload (stringified) so scanners receive JSON
+        const payloadObj = { guard_id: str1, place_id: str2, timestamp: timestamp };
+        const payload = JSON.stringify(payloadObj);
 
 
-let cancelled = false;
+        let cancelled = false;
 
 
-// Convert to PNG data URL (browser-friendly)
-QRCode.toDataURL(payload, { errorCorrectionLevel: 'H' })
-.then((url) => {
-if (!cancelled) setDataUrl(url);
-})
-.catch((err) => {
-console.error('QR generation failed', err);
-if (!cancelled) setDataUrl('');
-});
+        // Convert to PNG data URL (browser-friendly)
+        QRCode.toDataURL(payload, { errorCorrectionLevel: 'H' })
+            .then((url) => {
+                if (!cancelled) setDataUrl(url);
+            })
+            .catch((err) => {
+                console.error('QR generation failed', err);
+                if (!cancelled) setDataUrl('');
+            });
 
 
-// cleanup if component unmounts before promise resolves
-return () => {
-cancelled = true;
-};
-}, [timestamp, str1, str2]);
+        // cleanup if component unmounts before promise resolves
+        return () => {
+            cancelled = true;
+        };
+    }, [timestamp, str1, str2]);
 
 
-// optional auto-refresh interval
-useEffect(() => {
-if (!autoRefresh) return undefined;
-const id = setInterval(() => setTimestamp(Date.now()), refreshInterval);
-return () => clearInterval(id);
-}, [autoRefresh, refreshInterval]);
+    // optional auto-refresh interval
+    useEffect(() => {
+        if (!autoRefresh) return undefined;
+        const id = setInterval(() => setTimestamp(Date.now()), refreshInterval);
+        return () => clearInterval(id);
+    }, [autoRefresh, refreshInterval]);
 
 
-const refreshTimestamp = () => setTimestamp(Date.now());
+    const refreshTimestamp = () => setTimestamp(Date.now());
 
 
-// Render: show the JSON payload and the QR image
-const displayedPayload = JSON.stringify({ ts: timestamp, a: str1, b: str2 });
+    // Render: show the JSON payload and the QR image
+    const displayedPayload = JSON.stringify({ guard_id: str1, place_id: str2, timestamp: timestamp });
 
 
-return (
-<div style={{ display: 'inline-block', textAlign: 'center' }}>
-<div style={{ marginBottom: 8 }}>
-<strong>Payload (JSON)</strong>
-{/* <div style={{ fontFamily: 'monospace', marginTop: 4 }}>{displayedPayload}</div> */}
-</div>
+    return (
+        <div style={{ display: 'inline-block', textAlign: 'center' }}>
+            <div style={{ marginBottom: 8 }}>
+                <strong>Payload (JSON)</strong>
+                {/* <div style={{ fontFamily: 'monospace', marginTop: 4 }}>{displayedPayload}</div> */}
+            </div>
 
 
-{dataUrl ? (
-<img src={dataUrl} alt="QR code" style={{ width: 220, height: 220 }} />
-) : (
-<div>Generating QR...</div>
-)}
+            {dataUrl ? (
+                <img src={dataUrl} alt="QR code" style={{ width: 220, height: 220 }} />
+            ) : (
+                <div>Generating QR...</div>
+            )}
 
 
-<div style={{ marginTop: 8 }}>
-{/* <button onClick={refreshTimestamp}>Refresh timestamp</button> */}
-</div>
-</div>
-);
+            <div style={{ marginTop: 8 }}>
+                {/* <button onClick={refreshTimestamp}>Refresh timestamp</button> */}
+            </div>
+        </div>
+    );
 }
 
 export default QRCodeReactOnly;
