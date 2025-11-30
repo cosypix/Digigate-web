@@ -219,6 +219,10 @@ app.post("/api/admin/logs", isAdmin, async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         console.error(err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
 //Update Guard Location
 app.post("/api/guard/location",async(req,res)=>{
     console.log("POST /api/guard/location received");
