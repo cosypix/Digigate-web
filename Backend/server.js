@@ -6,6 +6,7 @@ import cors from "cors";
 import {Pool} from 'pg';
 
 const app = express();
+
 //Database Connection
 const pool= new Pool({
     host:process.env.host,
@@ -19,6 +20,7 @@ const pool= new Pool({
 const isConnected=async()=>{
     try{
         const client=await pool.connect();
+        client.release();
         return true;
     }
     catch(err){
@@ -26,12 +28,14 @@ const isConnected=async()=>{
         return false;
     }
 }
-if(isConnected){
-    console.log("Database Connected Successfully!!");
-}
-else{
-    console.log("Error in Database Connection.");
-}
+
+isConnected().then(connected => {
+    if(connected){
+        console.log("Database Connected Successfully!!");
+    } else {
+        console.log("Error in Database Connection.");
+    }
+});
 
 app.use(
     cors({
@@ -63,17 +67,41 @@ app.post("/api/login",async(req,res)=>{
     }
     try{
         const client=await pool.connect();
-        const result=await client.query(
+        
+        // Check Student
+        const studentResult=await client.query(
             "Select * from student where roll_no=$1 and password=$2",
             [username,password]
         );
-        if(result.rows.length===0)
-            return res.status(401).json({error:"Invalid Roll Number or Password."});  
-        const user=result.rows[0];
-        req.session.user={
-            username:user.username,
-        };
-        res.json({message:"Login Successful",user:req.session.user});
+
+        if(studentResult.rows.length > 0) {
+            const user=studentResult.rows[0];
+            req.session.user={
+                username:user.roll_no,
+                role: 'student'
+            };
+            client.release();
+            return res.json({message:"Login Successful", user:req.session.user, role: 'student'});
+        }
+
+        // Check Admin
+        const adminResult = await client.query(
+            "Select * from Admin where Admin_Id=$1 and password=$2",
+            [username, password]
+        );
+
+        if(adminResult.rows.length > 0) {
+            const user = adminResult.rows[0];
+            req.session.user = {
+                username: user.admin_id,
+                role: 'admin'
+            };
+            client.release();
+            return res.json({message: "Login Successful", user: req.session.user, role: 'admin'});
+        }
+
+        client.release();
+        return res.status(401).json({error:"Invalid Credentials."});  
     }
     catch(err){
         console.error("Error during Login:",err);
@@ -87,6 +115,61 @@ app.get("/api/me",(req,res)=>{
         res.json({loggedIn:true,user:req.session.user});
     }else{
         res.json({loggedIn:false});
+    }
+});
+
+// Admin Middleware
+const isAdmin = (req, res, next) => {
+    if (req.session.user && req.session.user.role === 'admin') {
+        next();
+    } else {
+        res.status(401).json({ error: "Unauthorized" });
+    }
+};
+
+// Admin Dashboard Stats
+app.get("/api/admin/stats", isAdmin, async (req, res) => {
+    try {
+        const client = await pool.connect();
+        const studentCount = await client.query("SELECT COUNT(*) FROM Student");
+        const guardCount = await client.query("SELECT COUNT(*) FROM Guard");
+        const recentLogs = await client.query("SELECT * FROM Log ORDER BY Timestamp DESC LIMIT 5");
+        
+        client.release();
+        res.json({
+            students: studentCount.rows[0].count,
+            guards: guardCount.rows[0].count,
+            recentLogs: recentLogs.rows
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Get All Students
+app.get("/api/admin/students", isAdmin, async (req, res) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query("SELECT * FROM Student");
+        client.release();
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Get All Guards
+app.get("/api/admin/guards", isAdmin, async (req, res) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query("SELECT * FROM Guard");
+        client.release();
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server Error" });
     }
 });
 
