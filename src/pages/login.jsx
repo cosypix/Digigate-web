@@ -29,6 +29,10 @@ function LoginPage() {
                 }
                 else {
                     window.location.href="/dashboard";
+                } else if (data.role === 'student') {
+                    window.location.href = "/student-dashboard";
+                } else {
+                    window.location.href = "/dashboard";
                 }
             }
         } catch (err) {
