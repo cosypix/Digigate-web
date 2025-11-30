@@ -23,6 +23,8 @@ function LoginPage() {
             } else {
                 if (data.role === 'admin') {
                     window.location.href = "/admin-dashboard";
+                } else if (data.role === 'student') {
+                    window.location.href = "/student-dashboard";
                 } else {
                     window.location.href = "/dashboard";
                 }
