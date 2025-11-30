@@ -77,7 +77,8 @@ app.post("/api/login",async(req,res)=>{
         if(studentResult.rows.length > 0) {
             const user=studentResult.rows[0];
             req.session.user={
-                username:user.roll_no,
+                userRollNo:user.roll_no,
+                userName:user.name,
                 role: 'student'
             };
             client.release();
@@ -92,7 +93,8 @@ app.post("/api/login",async(req,res)=>{
         if(adminResult.rows.length > 0) {
             const user = adminResult.rows[0];
             req.session.user = {
-                username: user.admin_id,
+                userAdminId: user.admin_id,
+                userName:user.name,
                 role: 'admin'
             };
             client.release();
@@ -107,7 +109,8 @@ app.post("/api/login",async(req,res)=>{
         if(guardResult.rows.length > 0) {
             const user = guardResult.rows[0];
             req.session.user = {
-                username: user.guard_id,
+                userGuardId: user.guard_id,
+                userName:user.guard_name,
                 role: 'guard'
             };
             client.release();
@@ -187,13 +190,29 @@ app.get("/api/admin/guards", isAdmin, async (req, res) => {
     }
 });
 
+//Update Guard Location
+app.post("/api/guard/location",async(req,res)=>{
+    console.log("POST /api/guard/location received");
+    console.log("Request body:", req.body);
+    const{guardId,location}=req.body;
+    try{
+        const client=await pool.connect();
+        await client.query("UPDATE Guard SET place_id=$1 WHERE guard_id=$2",[location,guardId]);
+        client.release();
+        console.log("Location updated successfully for guard:", guardId);
+        res.json({message:"Location Updated Successfully"});
+    } catch (err) { 
+        console.error("Error updating location:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
 //Logout
 app.post("/api/logout",(req,res)=>{
     req.session.destroy(()=>{
         res.clearCookie("connect.sid");
         res.json({message:"Logged out"});
     });
-    window.location.href="\login";
 });
 
 const port=3000;

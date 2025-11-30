@@ -23,8 +23,12 @@ function LoginPage() {
             } else {
                 if (data.role === 'admin') {
                     window.location.href = "/admin-dashboard";
-                } else {
-                    window.location.href = "/dashboard";
+                } 
+                else if (data.role==='guard') {
+                    window.location.href = "/guard-page";
+                }
+                else {
+                    window.location.href="/dashboard";
                 }
             }
         } catch (err) {
