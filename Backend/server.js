@@ -10,7 +10,7 @@ const app = express();
 //Database Connection
 const pool = new Pool({
     host: process.env.host,
-    port: process.env.port,
+    port: process.env.DB_PORT,
     database: process.env.database,
     user: process.env.user,
     password: process.env.password,
@@ -575,7 +575,7 @@ app.get("/api/student/logs", async (req, res) => {
     }
 });
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
