@@ -50,6 +50,7 @@ const AdminDashboard = () => {
     const [logs, setLogs] = useState([]);
     const [admins, setAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [adminDetails, setAdminDetails] = useState(null);
 
     // Student Management State
     const [showAddModal, setShowAddModal] = useState(false);
@@ -64,7 +65,22 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         fetchStats();
+        fetchAdminDetails();
     }, []);
+
+    const fetchAdminDetails = async () => {
+        try {
+            const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.loggedIn) {
+                    setAdminDetails(data.user);
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching admin details:", err);
+        }
+    };
 
     // State for Search and Modals
     const [searchGuard, setSearchGuard] = useState('');
@@ -381,8 +397,9 @@ const AdminDashboard = () => {
                     {showProfileMenu && (
                         <div className="profile-dropdown">
                             <div className="profile-info">
-                                <p className="profile-name">Admin User</p>
-                                <p className="profile-role">Administrator</p>
+                                <p className="profile-name">{adminDetails?.userName || 'Admin'}</p>
+                                <p className="profile-role">{adminDetails?.userAdminId || 'ID'}</p>
+                                <p className="profile-role" style={{ fontSize: '0.8rem', color: '#6366f1' }}>{adminDetails?.userDepartment || 'Dept'}</p>
                             </div>
                             <button className="btn btn-danger small" onClick={handleLogout}>Logout</button>
                         </div>

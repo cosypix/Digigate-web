@@ -79,6 +79,8 @@ app.post("/api/login", async (req, res) => {
             req.session.user={
                 userRollNo:user.roll_no,
                 userName:user.name,
+                userEmail: user.email,
+                hostelName: user.hostel_name,
                 role: 'student'
             };
             client.release();
@@ -96,6 +98,7 @@ app.post("/api/login", async (req, res) => {
             req.session.user = {
                 userAdminId: user.admin_id,
                 userName:user.name,
+                userDepartment: user.department,
                 role: 'admin'
             };
             client.release();
@@ -539,6 +542,26 @@ app.post("/api/mark-attendance", async (req, res) => {
 
     } catch (err) {
         console.error("Error marking attendance:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Get Student Logs
+app.get("/api/student/logs", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'student') {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    const roll_no = req.session.user.userRollNo;
+    try {
+        const client = await pool.connect();
+        const result = await client.query(
+            "SELECT * FROM Log WHERE roll_no = $1 ORDER BY Timestamp DESC LIMIT 5",
+            [roll_no]
+        );
+        client.release();
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching student logs:", err);
         res.status(500).json({ error: "Server Error" });
     }
 });

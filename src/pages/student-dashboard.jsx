@@ -8,6 +8,8 @@ const StudentDashboard = () => {
     const [showScanner, setShowScanner] = useState(false);
     const [scanMode, setScanMode] = useState(null); // 'Entry' or 'Exit'
     const [scanResult, setScanResult] = useState(null); // { status: 'success'|'error', message: '', type: '', timestamp: '' }
+    const [recentLogs, setRecentLogs] = useState([]);
+    const [showHistory, setShowHistory] = useState(false);
     const scannerRef = useRef(null);
 
     useEffect(() => {
@@ -18,11 +20,24 @@ const StudentDashboard = () => {
             .then((data) => {
                 if (data.loggedIn) {
                     setStudentDetails(data.user);
+                    fetchRecentLogs();
                 } else {
                     window.location.href = "/";
                 }
             });
     }, []);
+
+    const fetchRecentLogs = async () => {
+        try {
+            const res = await fetch("http://localhost:3000/api/student/logs", { credentials: "include" });
+            if (res.ok) {
+                const data = await res.json();
+                setRecentLogs(data);
+            }
+        } catch (err) {
+            console.error("Error fetching logs:", err);
+        }
+    };
 
     const startScanner = (mode) => {
         setScanMode(mode);
@@ -118,6 +133,7 @@ const StudentDashboard = () => {
                     type: mode,
                     timestamp: new Date().toLocaleString()
                 });
+                fetchRecentLogs(); // Refresh logs after successful scan
             } else {
                 setScanResult({
                     status: 'error',
@@ -167,6 +183,8 @@ const StudentDashboard = () => {
                         <div style={{ padding: '8px 10px', color: '#fff', borderBottom: '1px solid #444' }}>
                             <div style={{ fontWeight: 'bold' }}>{studentDetails?.userName}</div>
                             <div style={{ fontSize: '0.8em', color: '#aaa' }}>{studentDetails?.userRollNo}</div>
+                            <div style={{ fontSize: '0.8em', color: '#aaa' }}>{studentDetails?.userEmail}</div>
+                            <div style={{ fontSize: '0.8em', color: '#aaa' }}>{studentDetails?.hostelName}</div>
                         </div>
                         <div style={{ padding: '8px 10px', cursor: 'pointer', color: '#ef4444', fontWeight: 'bold' }} onClick={handleLogout}>Logout</div>
                     </div>
@@ -189,9 +207,53 @@ const StudentDashboard = () => {
                             <div className="card-title">Mark Exit</div>
                             <div className="card-desc">Click here to scan QR for Exit</div>
                         </div>
+
+                        <div className="action-card history-card" onClick={() => setShowHistory(true)}>
+                            <div className="card-icon">🕒</div>
+                            <div className="card-title">History</div>
+                            <div className="card-desc">View recent entry/exit logs</div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Recent Activity Modal */}
+            {showHistory && (
+                <div className="scanner-modal-overlay">
+                    <div className="scanner-modal" style={{ maxWidth: '600px' }}>
+                        <h2 className="scanner-title">Recent Activity</h2>
+                        <div className="activity-list">
+                            {recentLogs.length > 0 ? (
+                                <table className="activity-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date & Time</th>
+                                            <th>Location</th>
+                                            <th>Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {recentLogs.map((log, index) => (
+                                            <tr key={index}>
+                                                <td>{new Date(log.timestamp).toLocaleString()}</td>
+                                                <td>{log.place_id}</td>
+                                                <td>
+                                                    <span className={`status-badge ${log.log_type.includes('Entry') ? 'entry' : 'exit'}`}>
+                                                        {log.log_type}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="no-activity">No recent activity found.</p>
+                            )}
+                        </div>
+                        <button className="close-scanner-btn" onClick={() => setShowHistory(false)}>Close</button>
+                    </div>
+                </div>
+            )}
 
             {/* Scanner Modal */}
             {showScanner && (

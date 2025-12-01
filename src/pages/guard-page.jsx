@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeReactOnly from './qr-code.jsx';
 import './guard-page.css';
@@ -10,21 +10,22 @@ const GuardPage = () => {
     const [user, setUser] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(true);
     const [error, setError] = useState("");
-    
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
+
     const locations = [
-        ["Aryabhatta","H3"],
-        ["Maa Saraswati","MS"],
-        ["Vashistha","H1"],
-        ["Vivekananda","H4"],
-        ["Panini","PH"],
-        ["Nagarjuna","NH"],
-        ["Computer Center","CC"],
-        ["Main Gate","MG"]
+        ["Aryabhatta", "H3"],
+        ["Maa Saraswati", "MS"],
+        ["Vashistha", "H1"],
+        ["Vivekananda", "H4"],
+        ["Panini", "PH"],
+        ["Nagarjuna", "NH"],
+        ["Computer Center", "CC"],
+        ["Main Gate", "MG"]
     ];
 
     useEffect(() => {
         fetch("http://localhost:3000/api/me", {
-          credentials: "include",
+            credentials: "include",
         })
             .then((res) => res.json())
             .then((data) => {
@@ -35,25 +36,25 @@ const GuardPage = () => {
                     window.location.href = "/";
                 }
             });
-        }, []);
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (selectedLocation) {
-                const guardId = user.userGuardId;
-            try{
+            const guardId = user.userGuardId;
+            try {
                 const response = await fetch("http://localhost:3000/api/guard/location", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                credentials: "include",
-                body: JSON.stringify({ guardId, location: selectedLocation }),
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({ guardId, location: selectedLocation }),
                 });
                 const data = await response.json();
                 if (!response.ok) {
                     setError(data.error);
-                    console.log(data.error);    
+                    console.log(data.error);
                 }
                 else {
                     setSubmitted(true);
@@ -66,8 +67,8 @@ const GuardPage = () => {
 
     const handleLogout = async () => {
         await fetch("http://localhost:3000/api/logout", {
-        method: "POST",
-        credentials: "include",
+            method: "POST",
+            credentials: "include",
         });
         window.location.href = "/";
         setIsLoggedIn(false);
@@ -77,9 +78,18 @@ const GuardPage = () => {
 
     return (
         <div className="guard-container">
-            <button className="guard-top-logout-btn" onClick={handleLogout}>
-                Logout
-            </button>
+            <div className="guard-profile-section" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                <div className="profile-icon">{(user?.userName || 'G').charAt(0)}</div>
+                {showProfileMenu && (
+                    <div className="profile-dropdown">
+                        <div className="profile-info">
+                            <p className="profile-name">{user?.userName || 'Guard'}</p>
+                            <p className="profile-role">{user?.userGuardId || 'ID'}</p>
+                        </div>
+                        <button className="guard-logout-btn" onClick={handleLogout}>Logout</button>
+                    </div>
+                )}
+            </div>
 
             {!submitted ? (
                 <div className="guard-card">
@@ -105,14 +115,14 @@ const GuardPage = () => {
                     <h2 className="guard-success-title">Guard</h2>
                     <div className="guard-details">
                         <div className="guard-info">
-                            <strong>Guard ID:</strong> {user.userGuardId}<br/>
-                            <strong>Guard Name:</strong> {user.userName}<br/>
+                            <strong>Guard ID:</strong> {user.userGuardId}<br />
+                            <strong>Guard Name:</strong> {user.userName}<br />
                             <strong>Location:</strong> {selectedLocation}
                             <div className="qrCode"><QRCodeReactOnly str1={user.userGuardId} str2={selectedLocation} /></div>
                             <button
-                            className="guard-action-btn"
-                            onClick={() => setSubmitted(false)}>
-                            Change Location
+                                className="guard-action-btn"
+                                onClick={() => setSubmitted(false)}>
+                                Change Location
                             </button>
                         </div>
                     </div>
