@@ -14,8 +14,7 @@ const pool = new Pool({
     database: process.env.database,
     user: process.env.user,
     password: process.env.password,
-    ssl: { rejectUnauthorized: false },
-    family: 4 // Force IPv4 to avoid ENETUNREACH errors on some networks
+    ssl: { rejectUnauthorized: false }
 });
 
 const isConnected = async () => {
