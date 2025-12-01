@@ -70,7 +70,7 @@ const AdminDashboard = () => {
 
     const fetchAdminDetails = async () => {
         try {
-            const res = await fetch("http://localhost:3000/api/me", { credentials: "include" });
+            const res = await fetch("https://digigate-web.onrender.com/api/me", { credentials: "include" });
             if (res.ok) {
                 const data = await res.json();
                 if (data.loggedIn) {
@@ -128,7 +128,7 @@ const AdminDashboard = () => {
         // Optimization: check if logs are already populated? 
         // But logs might change, so fetching fresh is safer.
         try {
-            const res = await fetch('http://localhost:3000/api/admin/logs', {
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/logs', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/stats', { credentials: 'include' });
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/stats', { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 setStats(data);
@@ -163,28 +163,28 @@ const AdminDashboard = () => {
 
     const fetchStudents = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/students', { credentials: 'include' });
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/students', { credentials: 'include' });
             if (res.ok) setStudents(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchGuards = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/guards', { credentials: 'include' });
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/guards', { credentials: 'include' });
             if (res.ok) setGuards(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchLocations = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/locations', { method: "GET", credentials: 'include' });
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/locations', { method: "GET", credentials: 'include' });
             if (res.ok) setLocations(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchLogs = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/logs', {
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/logs', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -197,19 +197,19 @@ const AdminDashboard = () => {
 
     const fetchAdmins = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/admins', { credentials: 'include' });
+            const res = await fetch('https://digigate-web.onrender.com/api/admin/admins', { credentials: 'include' });
             if (res.ok) setAdmins(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const handleLogout = async () => {
-        await fetch('http://localhost:3000/api/logout', { method: 'POST', credentials: 'include' });
+        await fetch('https://digigate-web.onrender.com/api/logout', { method: 'POST', credentials: 'include' });
         navigate('/login');
     };
 
     const handleAddStudent = async (e) => {
         e.preventDefault();
-        const url = editingStudent ? `http://localhost:3000/api/admin/update-student/${newStudent.roll_no}` : 'http://localhost:3000/api/admin/add-student';
+        const url = editingStudent ? `https://digigate-web.onrender.com/api/admin/update-student/${newStudent.roll_no}` : 'https://digigate-web.onrender.com/api/admin/add-student';
         const method = editingStudent ? 'PUT' : 'POST';
         try {
             const res = await fetch(url, {
@@ -229,7 +229,7 @@ const AdminDashboard = () => {
 
     const handleAddGuard = async (e) => {
         e.preventDefault();
-        const url = editingGuard ? `http://localhost:3000/api/admin/update-guard/${newGuard.guard_id}` : 'http://localhost:3000/api/admin/add-guard';
+        const url = editingGuard ? `https://digigate-web.onrender.com/api/admin/update-guard/${newGuard.guard_id}` : 'https://digigate-web.onrender.com/api/admin/add-guard';
         const method = editingGuard ? 'PUT' : 'POST';
         try {
             const res = await fetch(url, {
@@ -249,7 +249,7 @@ const AdminDashboard = () => {
 
     const handleAddLocation = async (e) => {
         e.preventDefault();
-        const url = editingLocation ? `http://localhost:3000/api/admin/update-location/${newLocation.place_id}` : 'http://localhost:3000/api/admin/add-location';
+        const url = editingLocation ? `https://digigate-web.onrender.com/api/admin/update-location/${newLocation.place_id}` : 'https://digigate-web.onrender.com/api/admin/add-location';
         const method = editingLocation ? 'PUT' : 'POST';
         try {
             const res = await fetch(url, {
@@ -269,7 +269,7 @@ const AdminDashboard = () => {
 
     const handleAddLog = async (e) => {
         e.preventDefault();
-        const url = editingLog ? `http://localhost:3000/api/admin/update-log` : 'http://localhost:3000/api/admin/add-log';
+        const url = editingLog ? `https://digigate-web.onrender.com/api/admin/update-log` : 'https://digigate-web.onrender.com/api/admin/add-log';
         const method = editingLog ? 'PUT' : 'POST';
         try {
             const res = await fetch(url, {
@@ -289,7 +289,7 @@ const AdminDashboard = () => {
 
     const handleAddAdmin = async (e) => {
         e.preventDefault();
-        const url = editingAdmin ? `http://localhost:3000/api/admin/update-admin/${newAdmin.admin_id}` : 'http://localhost:3000/api/admin/add-admin';
+        const url = editingAdmin ? `https://digigate-web.onrender.com/api/admin/update-admin/${newAdmin.admin_id}` : 'https://digigate-web.onrender.com/api/admin/add-admin';
         const method = editingAdmin ? 'PUT' : 'POST';
         try {
             const res = await fetch(url, {
@@ -311,7 +311,7 @@ const AdminDashboard = () => {
     const handleDeleteStudent = async (id) => {
         if (!window.confirm('Are you sure you want to delete this student?')) return;
         try {
-            await fetch(`http://localhost:3000/api/admin/delete-student/${id}`, { method: 'DELETE', credentials: 'include' });
+            await fetch(`https://digigate-web.onrender.com/api/admin/delete-student/${id}`, { method: 'DELETE', credentials: 'include' });
             fetchStudents();
         } catch (err) { console.error(err); }
     };
@@ -319,7 +319,7 @@ const AdminDashboard = () => {
     const handleDeleteGuard = async (id) => {
         if (!window.confirm('Are you sure you want to delete this guard?')) return;
         try {
-            await fetch(`http://localhost:3000/api/admin/delete-guard/${id}`, { method: 'DELETE', credentials: 'include' });
+            await fetch(`https://digigate-web.onrender.com/api/admin/delete-guard/${id}`, { method: 'DELETE', credentials: 'include' });
             fetchGuards();
         } catch (err) { console.error(err); }
     };
@@ -327,7 +327,7 @@ const AdminDashboard = () => {
     const handleDeleteLocation = async (id) => {
         if (!window.confirm('Are you sure you want to delete this location?')) return;
         try {
-            await fetch(`http://localhost:3000/api/admin/delete-location/${id}`, { method: 'DELETE', credentials: 'include' });
+            await fetch(`https://digigate-web.onrender.com/api/admin/delete-location/${id}`, { method: 'DELETE', credentials: 'include' });
             fetchLocations();
         } catch (err) { console.error(err); }
     };
@@ -335,7 +335,7 @@ const AdminDashboard = () => {
     const handleDeleteLog = async (log) => {
         if (!window.confirm('Are you sure you want to delete this log?')) return;
         try {
-            await fetch(`http://localhost:3000/api/admin/delete-log`, {
+            await fetch(`https://digigate-web.onrender.com/api/admin/delete-log`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roll_no: log.roll_no, guard_id: log.guard_id, place_id: log.place_id }),
@@ -348,7 +348,7 @@ const AdminDashboard = () => {
     const handleDeleteAdmin = async (id) => {
         if (!window.confirm('Are you sure you want to delete this admin?')) return;
         try {
-            await fetch(`http://localhost:3000/api/admin/delete-admin/${id}`, { method: 'DELETE', credentials: 'include' });
+            await fetch(`https://digigate-web.onrender.com/api/admin/delete-admin/${id}`, { method: 'DELETE', credentials: 'include' });
             fetchAdmins();
         } catch (err) { console.error(err); }
     };

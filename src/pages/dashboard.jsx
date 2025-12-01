@@ -4,7 +4,7 @@ function DashboardPage() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/me", {
+    fetch("https://digigate-web.onrender.com/api/me", {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -18,7 +18,7 @@ function DashboardPage() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("http://localhost:3000/api/logout", {
+    await fetch("https://digigate-web.onrender.com/api/logout", {
       method: "POST",
       credentials: "include",
     });

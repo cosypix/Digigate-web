@@ -13,7 +13,7 @@ const StudentDashboard = () => {
     const scannerRef = useRef(null);
 
     useEffect(() => {
-        fetch("http://localhost:3000/api/me", {
+        fetch("https://digigate-web.onrender.com/api/me", {
             credentials: "include",
         })
             .then((res) => res.json())
@@ -29,7 +29,7 @@ const StudentDashboard = () => {
 
     const fetchRecentLogs = async () => {
         try {
-            const res = await fetch("http://localhost:3000/api/student/logs", { credentials: "include" });
+            const res = await fetch("https://digigate-web.onrender.com/api/student/logs", { credentials: "include" });
             if (res.ok) {
                 const data = await res.json();
                 setRecentLogs(data);
@@ -102,7 +102,7 @@ const StudentDashboard = () => {
                 throw new Error("Invalid QR Data Structure. Missing guard_id, place_id, or timestamp.");
             }
 
-            const response = await fetch("http://localhost:3000/api/mark-attendance", {
+            const response = await fetch("https://digigate-web.onrender.com/api/mark-attendance", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -155,7 +155,7 @@ const StudentDashboard = () => {
     };
 
     const handleLogout = async () => {
-        await fetch("http://localhost:3000/api/logout", {
+        await fetch("https://digigate-web.onrender.com/api/logout", {
             method: "POST",
             credentials: "include",
         });
