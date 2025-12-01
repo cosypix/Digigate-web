@@ -184,7 +184,13 @@ const AdminDashboard = () => {
 
     const fetchLogs = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/admin/logs', { credentials: 'include' });
+            const res = await fetch('http://localhost:3000/api/admin/logs', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: 'include'
+            });
             if (res.ok) setLogs(await res.json());
         } catch (err) { console.error(err); }
     };
@@ -378,6 +384,34 @@ const AdminDashboard = () => {
         setShowAddAdminModal(true);
     };
 
+    const downloadLogsCSV = () => {
+        if (!logs.length) return alert("No logs to download.");
+
+        const headers = ["Roll No", "Guard ID", "Place ID", "Log Type", "Timestamp"];
+        const csvRows = [headers.join(",")];
+
+        logs.forEach(log => {
+            const row = [
+                log.roll_no,
+                log.guard_id,
+                log.place_id,
+                log.log_type,
+                new Date(log.timestamp).toLocaleString().replace(/,/g, '') // Remove commas to avoid CSV issues
+            ];
+            csvRows.push(row.join(","));
+        });
+
+        const csvString = csvRows.join("\n");
+        const blob = new Blob([csvString], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "logs.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.roll_no.toLowerCase().includes(searchTerm.toLowerCase()));
     const filteredGuards = guards.filter(g => g.guard_name.toLowerCase().includes(searchGuard.toLowerCase()) || g.guard_id.toLowerCase().includes(searchGuard.toLowerCase()));
     const filteredLocations = locations.filter(l => l.place_name.toLowerCase().includes(searchLocation.toLowerCase()) || l.place_id.toLowerCase().includes(searchLocation.toLowerCase()));
@@ -510,6 +544,7 @@ const AdminDashboard = () => {
                         <h2 className="page-title section-title section-title-large" style={{ margin: 0 }}>All Logs</h2>
                         <div style={{ display: 'flex', gap: '15px' }}>
                             <input type="text" placeholder="Search logs..." className="search-input" value={searchLog} onChange={(e) => setSearchLog(e.target.value)} />
+                            <button className="btn btn-outline" onClick={downloadLogsCSV}>⬇ Download CSV</button>
                             <button className="btn btn-primary" onClick={() => setShowAddLogModal(true)}>+ Add Log</button>
                         </div>
                     </div>

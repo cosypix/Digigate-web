@@ -446,6 +446,8 @@ app.post("/api/logout", (req, res) => {
 
 // Mark Attendance
 app.post("/api/mark-attendance", async (req, res) => {
+    console.log("Mark Attendance Request Session:", req.session);
+    console.log("Mark Attendance Request User:", req.session.user);
     if (!req.session.user || req.session.user.role !== 'student') {
         return res.status(401).json({ error: "Unauthorized" });
     }
@@ -471,9 +473,12 @@ app.post("/api/mark-attendance", async (req, res) => {
 
         // 2. State Validation (Prevent Double Entry/Exit)
         const lastLogResult = await client.query(
-            "SELECT log_type FROM Log WHERE roll_no = $1 AND Place_Id = $2 ORDER BY Timestamp DESC LIMIT 1",
+            "SELECT log_type, Timestamp FROM Log WHERE roll_no = $1 AND Place_Id = $2 ORDER BY Timestamp DESC LIMIT 1",
             [roll_no, place_id]
         );
+
+        console.log(`Checking history for Roll: ${roll_no}, Place: ${place_id}`);
+        console.log("Last Log Found:", lastLogResult.rows.length > 0 ? lastLogResult.rows[0] : "None");
 
         const lastLogType = lastLogResult.rows.length > 0 ? lastLogResult.rows[0].log_type : null;
         
@@ -481,13 +486,17 @@ app.post("/api/mark-attendance", async (req, res) => {
         const isLastEntry = lastLogType && lastLogType.endsWith('Entry');
         const isLastExit = lastLogType && lastLogType.endsWith('Exit');
 
+        console.log(`Scan Type: ${scan_type}, Is Last Entry: ${isLastEntry}`);
+
         if (scan_type === 'Entry') {
             if (isLastEntry) {
+                console.log("Blocking Double Entry");
                 client.release();
                 return res.status(400).json({ error: "You are already marked as Entered at this location. Please Exit first." });
             }
         } else if (scan_type === 'Exit') {
             if (!isLastEntry) { // Must have entered to exit (or if no history, assume not entered)
+                console.log("Blocking Invalid Exit");
                 client.release();
                 return res.status(400).json({ error: "You are not marked as Entered at this location. Please Enter first." });
             }
