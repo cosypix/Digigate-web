@@ -1,5 +1,5 @@
 import './App.css'
-import { Routes, Route, Navigate, HashRouter } from 'react-router-dom'
+import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom'
 import LoginPage from './pages/login.jsx'
 import DashboardPage from './pages/dashboard.jsx'
 import AdminDashboard from './pages/admin-dashboard.jsx'
@@ -10,7 +10,7 @@ import StudentDashboard from './pages/student-dashboard.jsx'
 
 function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -19,7 +19,7 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/guard-page" element={<GuardPage />} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   )
 }
 
