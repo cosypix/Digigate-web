@@ -39,7 +39,7 @@ isConnected().then(connected => {
 
 app.use(
     cors({
-        origin: "https://digigate-web-obgf.onrender.com",
+        origin: "https://digigate-web-qyyf.onrender.com",
         credentials: true,
     })
 );
