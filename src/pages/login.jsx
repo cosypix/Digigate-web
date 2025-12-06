@@ -23,7 +23,7 @@ function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data?.error || "Login failed");
+        setError(data.error || "Login failed");
         return;
       }
 
