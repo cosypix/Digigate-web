@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useNavigate } from "react";
 import './login.css';
 
 function LoginPage() {
@@ -7,6 +7,7 @@ function LoginPage() {
   const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
+    const navigate=useNavigate();
     e.preventDefault();
     setError("");
     try {
@@ -28,16 +29,16 @@ function LoginPage() {
 
       switch (data.role) {
         case 'admin':
-          window.location.href = "/admin-dashboard";
+          navigate("/admin-dashboard");
           break;
         case 'guard':
-          window.location.href = "/guard-page";
+          navigate("/guard-page");
           break;
         case 'student':
-          window.location.href = "/student-dashboard";
+          navigate("/student-dashboard");
           break;
         default:
-          window.location.href = "/dashboard";
+          navigate("/dashboard");
       }
     } catch (err) {
       console.error(err);
