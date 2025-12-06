@@ -51,10 +51,11 @@ app.use(
     session({
         secret: "DigiGateSecret",
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
         cookie: {
             secure: true,
             httpOnly: true,
+            sameSite: 'none',
             maxAge: 24 * 60 * 60 * 1000
         },
     })
