@@ -2,12 +2,12 @@ import React, { useState,useNavigate } from "react";
 import './login.css';
 
 function LoginPage() {
+  const navigate=useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
-    const navigate=useNavigate();
     e.preventDefault();
     setError("");
     try {
