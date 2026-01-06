@@ -39,21 +39,23 @@ isConnected().then(connected => {
 
 app.use(
     cors({
-        origin: "https://digigate-web-obgf.onrender.com",
+        origin: `${process.env.Frontend_URL}`,
         credentials: true,
     })
 );
 app.use(express.json());
 app.use(cookieParser());
-
+app.set('trust proxy', 1);
 //Session Setup
 app.use(
     session({
         secret: "DigiGateSecret",
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
         cookie: {
+            secure: process.env.NODE_ENV == 'production',
             httpOnly: true,
+            sameSite: process.env.NODE_ENV == 'production' ? 'none' : 'lax',
             maxAge: 24 * 60 * 60 * 1000
         },
     })

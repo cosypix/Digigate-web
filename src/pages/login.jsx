@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import './login.css';
 
 function LoginPage() {
+  const navigate=useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -10,7 +12,7 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     try {
-      const response = await fetch("https://digigate-web.onrender.com/api/login", {
+      const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -22,22 +24,22 @@ function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data?.error || "Login failed");
+        setError(data.error || "Login failed");
         return;
       }
 
       switch (data.role) {
         case 'admin':
-          window.location.href = "/admin-dashboard";
+          navigate("/admin-dashboard");
           break;
         case 'guard':
-          window.location.href = "/guard-page";
+          navigate("/guard-page");
           break;
         case 'student':
-          window.location.href = "/student-dashboard";
+          navigate("/student-dashboard");
           break;
         default:
-          window.location.href = "/dashboard";
+          navigate("/dashboard");
       }
     } catch (err) {
       console.error(err);

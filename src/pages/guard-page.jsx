@@ -24,7 +24,7 @@ const GuardPage = () => {
     ];
 
     useEffect(() => {
-        fetch("https://digigate-web.onrender.com/api/me", {
+        fetch(`${import.meta.env.VITE_Backend_URL}/api/me`, {
             credentials: "include",
         })
             .then((res) => res.json())
@@ -43,7 +43,7 @@ const GuardPage = () => {
         if (selectedLocation) {
             const guardId = user.userGuardId;
             try {
-                const response = await fetch("https://digigate-web.onrender.com/api/guard/location", {
+                const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/location`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -66,7 +66,7 @@ const GuardPage = () => {
     };
 
     const handleLogout = async () => {
-        await fetch("https://digigate-web.onrender.com/api/logout", {
+        await fetch(`${import.meta.env.VITE_Backend_URL}/api/logout`, {
             method: "POST",
             credentials: "include",
         });
