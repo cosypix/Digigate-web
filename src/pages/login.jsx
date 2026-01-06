@@ -12,7 +12,7 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     try {
-      const response = await fetch("https://digigate-web.onrender.com/api/login", {
+      const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

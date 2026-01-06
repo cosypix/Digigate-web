@@ -39,7 +39,7 @@ isConnected().then(connected => {
 
 app.use(
     cors({
-        origin: "https://digigate-web-qyyf.onrender.com",
+        origin: `${process.env.Frontend_URL}`,
         credentials: true,
     })
 );
@@ -53,9 +53,9 @@ app.use(
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: true,
+            secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
-            sameSite: 'none',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 24 * 60 * 60 * 1000
         },
     })

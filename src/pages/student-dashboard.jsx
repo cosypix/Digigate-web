@@ -13,7 +13,7 @@ const StudentDashboard = () => {
     const scannerRef = useRef(null);
 
     useEffect(() => {
-        fetch("https://digigate-web.onrender.com/api/me", {
+        fetch(`${import.meta.env.VITE_Backend_URL}/api/me`, {
             credentials: "include",
         })
             .then((res) => res.json())
@@ -29,7 +29,7 @@ const StudentDashboard = () => {
 
     const fetchRecentLogs = async () => {
         try {
-            const res = await fetch("https://digigate-web.onrender.com/api/student/logs", { credentials: "include" });
+            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/student/logs`, { credentials: "include" });
             if (res.ok) {
                 const data = await res.json();
                 setRecentLogs(data);
@@ -86,7 +86,6 @@ const StudentDashboard = () => {
             let qrData = JSON.parse(decodedText);
             console.log("Parsed QR Data:", qrData);
 
-            // Support for short format: { ts, a, b } -> { timestamp, guard_id, place_id }
             if (qrData.ts && qrData.a && qrData.b) {
                 qrData = {
                     guard_id: qrData.a,
@@ -102,7 +101,7 @@ const StudentDashboard = () => {
                 throw new Error("Invalid QR Data Structure. Missing guard_id, place_id, or timestamp.");
             }
 
-            const response = await fetch("https://digigate-web.onrender.com/api/mark-attendance", {
+            const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/mark-attendance`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -155,7 +154,7 @@ const StudentDashboard = () => {
     };
 
     const handleLogout = async () => {
-        await fetch("https://digigate-web.onrender.com/api/logout", {
+        await fetch(`${import.meta.env.VITE_Backend_URL}/api/logout`, {
             method: "POST",
             credentials: "include",
         });
