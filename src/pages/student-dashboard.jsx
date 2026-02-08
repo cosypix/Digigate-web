@@ -10,6 +10,7 @@ const StudentDashboard = () => {
     const [scanResult, setScanResult] = useState(null); // { status: 'success'|'error', message: '', type: '', timestamp: '' }
     const [recentLogs, setRecentLogs] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const scannerRef = useRef(null);
 
     useEffect(() => {
@@ -54,14 +55,20 @@ const StudentDashboard = () => {
                     qrbox: { width: 250, height: 250 },
                 },
                 (decodedText) => {
+                    // Prevent multiple scans
+                    if (isLoading) return;
+
+                    // Stop scanner immediately to prevent double reads
+                    html5QrCode.pause();
                     handleScanSuccess(decodedText, mode);
-                    html5QrCode.stop().then(() => {
-                        scannerRef.current = null;
-                        setShowScanner(false);
-                    }).catch(err => console.error(err));
+
+                    // Cleanup scanner after processing (in handleScanSuccess or here?)
+                    // We'll stop it here conceptually, but handleScanSuccess is async
                 },
                 (errorMessage) => {
-                    // console.log(errorMessage);
+                    // Error message handling
+
+
                 }
             ).catch(err => {
                 console.error("Error starting scanner", err);
@@ -81,10 +88,10 @@ const StudentDashboard = () => {
     };
 
     const handleScanSuccess = async (decodedText, mode) => {
+        setIsLoading(true);
         try {
-            console.log("Scanned QR Content:", decodedText);
             let qrData = JSON.parse(decodedText);
-            console.log("Parsed QR Data:", qrData);
+
 
             if (qrData.ts && qrData.a && qrData.b) {
                 qrData = {
@@ -92,7 +99,7 @@ const StudentDashboard = () => {
                     place_id: qrData.b,
                     timestamp: qrData.ts
                 };
-                console.log("Mapped Short Format to:", qrData);
+
             }
 
             const { guard_id, place_id, timestamp } = qrData;
@@ -119,11 +126,18 @@ const StudentDashboard = () => {
             let data;
             try {
                 data = JSON.parse(responseText);
-                console.log("API Response:", data);
+
             } catch (e) {
                 console.error("Failed to parse JSON. Response was:", responseText);
                 throw new Error(`Server Error: ${response.status} ${response.statusText}`);
             }
+
+            // Stop scanner fully now
+            if (scannerRef.current) {
+                await scannerRef.current.stop();
+                scannerRef.current = null;
+            }
+            setShowScanner(false);
 
             if (response.ok) {
                 setScanResult({
@@ -144,12 +158,21 @@ const StudentDashboard = () => {
 
         } catch (err) {
             console.error("Scan Error:", err);
+            // Stop scanner if error
+            if (scannerRef.current) {
+                await scannerRef.current.stop();
+                scannerRef.current = null;
+            }
+            setShowScanner(false);
+
             setScanResult({
                 status: 'error',
                 message: err.message || "Invalid QR Code or Network Error",
                 type: mode,
                 timestamp: new Date().toLocaleString()
             });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -163,29 +186,26 @@ const StudentDashboard = () => {
 
     return (
         <div className="student-container">
+            {isLoading && (
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Processing...</p>
+                </div>
+            )}
+
             {/* Profile Section */}
             <div className="student-profile-section" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                 <div className="profile-icon">{(studentDetails?.userName || 'S').charAt(0)}</div>
                 <span className="profile-text">{studentDetails?.userName || 'Student'}</span>
                 {showProfileMenu && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '120%',
-                        right: 0,
-                        background: '#1e293b',
-                        padding: '10px',
-                        borderRadius: '10px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                        minWidth: '150px',
-                        zIndex: 100
-                    }}>
-                        <div style={{ padding: '8px 10px', color: '#fff', borderBottom: '1px solid #444' }}>
-                            <div style={{ fontWeight: 'bold' }}>{studentDetails?.userName}</div>
-                            <div style={{ fontSize: '0.8em', color: '#aaa' }}>{studentDetails?.userRollNo}</div>
-                            <div style={{ fontSize: '0.8em', color: '#aaa' }}>{studentDetails?.userEmail}</div>
-                            <div style={{ fontSize: '0.8em', color: '#aaa' }}>{studentDetails?.hostelName}</div>
+                    <div className="student-profile-dropdown" onClick={(e) => e.stopPropagation()}>
+                        <div className="student-profile-item">
+                            <div className="student-profile-name">{studentDetails?.userName}</div>
+                            <div className="student-profile-detail">{studentDetails?.userRollNo}</div>
+                            <div className="student-profile-detail">{studentDetails?.userEmail}</div>
+                            <div className="student-profile-detail">{studentDetails?.hostelName}</div>
                         </div>
-                        <div style={{ padding: '8px 10px', cursor: 'pointer', color: '#ef4444', fontWeight: 'bold' }} onClick={handleLogout}>Logout</div>
+                        <div className="student-logout-btn" onClick={handleLogout}>Logout</div>
                     </div>
                 )}
             </div>
@@ -260,6 +280,7 @@ const StudentDashboard = () => {
                     <div className="scanner-modal">
                         <h2 className="scanner-title">Scanning for {scanMode}</h2>
                         <div id="reader" style={{ width: '100%' }}></div>
+                        {/* Optional: Add manual close if scanner stuck? */}
                         <button className="close-scanner-btn" onClick={stopScanner}>Close Scanner</button>
                     </div>
                 </div>
@@ -273,7 +294,7 @@ const StudentDashboard = () => {
                             {scanResult.status === 'success' ? '✅' : '❌'}
                         </div>
                         <h2 className="result-title">
-                            {scanResult.status === 'success' ? 'Success!' : 'Failed!'}
+                            {scanResult.status === 'success' ? 'Success!' : 'Blocked!'}
                         </h2>
                         <p className="result-message">{scanResult.message}</p>
                         <p className="result-timestamp">{scanResult.timestamp}</p>
@@ -284,5 +305,6 @@ const StudentDashboard = () => {
         </div>
     );
 };
+
 
 export default StudentDashboard;

@@ -2,6 +2,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
+  /* Global Reset */
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+:root {
   /* Core Colors */
   --bg-dark: #050511;
   --bg-gradient: radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),

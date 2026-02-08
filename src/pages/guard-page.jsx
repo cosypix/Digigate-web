@@ -40,7 +40,7 @@ const GuardPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (selectedLocation) {
+        if (selectedLocation && user) {
             const guardId = user.userGuardId;
             try {
                 const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/location`, {
@@ -54,7 +54,7 @@ const GuardPage = () => {
                 const data = await response.json();
                 if (!response.ok) {
                     setError(data.error);
-                    console.log(data.error);
+
                 }
                 else {
                     setSubmitted(true);
@@ -62,6 +62,63 @@ const GuardPage = () => {
             } catch (err) {
                 setError("Network error. Please try again later.");
             }
+        }
+    };
+
+    const [manualRollNo, setManualRollNo] = useState("");
+    const [recentLogs, setRecentLogs] = useState([]);
+
+    // Poll for recent logs when location is selected
+    useEffect(() => {
+        let interval;
+        if (submitted && selectedLocation) {
+            fetchRecentLogs();
+            interval = setInterval(fetchRecentLogs, 5000);
+        }
+        return () => clearInterval(interval);
+    }, [submitted, selectedLocation]);
+
+    const fetchRecentLogs = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/recent-logs?place_id=${selectedLocation}`, {
+                credentials: "include"
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setRecentLogs(data);
+            }
+        } catch (err) {
+            console.error("Error fetching logs:", err);
+        }
+    };
+
+    const handleManualSubmit = async (type) => {
+        if (!manualRollNo) return alert("Enter Roll No");
+        if (!user || !user.userGuardId) return alert("Guard ID not found. Please relogin.");
+
+        const guardId = user.userGuardId;
+        try {
+            const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/manual-log`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    roll_no: manualRollNo,
+                    guard_id: guardId,
+                    place_id: selectedLocation,
+                    scan_type: type
+                }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert(data.message);
+                setManualRollNo("");
+                fetchRecentLogs();
+            } else {
+                alert(data.error || "Failed");
+            }
+        } catch (err) {
+            alert("Error: " + err.message);
         }
     };
 
@@ -81,7 +138,7 @@ const GuardPage = () => {
             <div className="guard-profile-section" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                 <div className="profile-icon">{(user?.userName || 'G').charAt(0)}</div>
                 {showProfileMenu && (
-                    <div className="profile-dropdown">
+                    <div className="guard-profile-dropdown">
                         <div className="profile-info">
                             <p className="profile-name">{user?.userName || 'Guard'}</p>
                             <p className="profile-role">{user?.userGuardId || 'ID'}</p>
@@ -111,19 +168,73 @@ const GuardPage = () => {
                     </form>
                 </div>
             ) : (
-                <div className="guard-summary">
-                    <h2 className="guard-success-title">Guard</h2>
-                    <div className="guard-details">
-                        <div className="guard-info">
-                            <strong>Guard ID:</strong> {user.userGuardId}<br />
-                            <strong>Guard Name:</strong> {user.userName}<br />
-                            <strong>Location:</strong> {selectedLocation}
-                            <div className="qrCode"><QRCodeReactOnly str1={user.userGuardId} str2={selectedLocation} /></div>
+                <div className="guard-dashboard-container">
+                    <div className="guard-summary-card">
+                        <h2 className="guard-success-title">Guard Portal</h2>
+                        <div className="guard-details">
+                            <p><strong>Guard:</strong> {user?.userName} ({user?.userGuardId})</p>
+                            <p><strong>Location:</strong> {locations.find(l => l[1] === selectedLocation)?.[0] || selectedLocation}</p>
+                            <div className="qrCode-container">
+                                <QRCodeReactOnly str1={user.userGuardId} str2={selectedLocation} />
+                            </div>
                             <button
                                 className="guard-action-btn"
                                 onClick={() => setSubmitted(false)}>
                                 Change Location
                             </button>
+                        </div>
+                    </div>
+
+                    <div className="guard-controls-section">
+                        {/* Manual Override */}
+                        <div className="manual-override-card">
+                            <h3>Manual Override</h3>
+                            <div className="manual-input-group">
+                                <input
+                                    type="text"
+                                    placeholder="Student Roll No"
+                                    value={manualRollNo}
+                                    onChange={(e) => setManualRollNo(e.target.value)}
+                                    className="manual-input"
+                                />
+                                <div className="manual-actions">
+                                    <button className="manual-btn entry" onClick={() => handleManualSubmit('Entry')}>Force Entry</button>
+                                    <button className="manual-btn exit" onClick={() => handleManualSubmit('Exit')}>Force Exit</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Activity Feed */}
+                        <div className="live-feed-card">
+                            <h3>Live Activity Feed</h3>
+                            <div className="feed-list">
+                                {recentLogs.length === 0 ? <p>No recent activity</p> : (
+                                    <table className="feed-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Name</th>
+                                                <th>Roll No</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {recentLogs.map((log, i) => (
+                                                <tr key={i}>
+                                                    <td>{new Date(log.timestamp).toLocaleTimeString()}</td>
+                                                    <td>{log.name}</td>
+                                                    <td>{log.roll_no}</td>
+                                                    <td>
+                                                        <span className={`status-badge ${log.log_type.endsWith('Entry') ? 'entry' : 'exit'}`}>
+                                                            {log.log_type}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import './login.css';
 
 function LoginPage() {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,7 +21,16 @@ function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("JSON Parse Error:", e);
+        setError(`Server Error: ${response.status} (Invalid JSON)`);
+        return;
+      }
 
       if (!response.ok) {
         setError(data.error || "Login failed");

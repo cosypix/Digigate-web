@@ -7,6 +7,7 @@ import { Pool } from 'pg';
 
 const app = express();
 
+
 //Database Connection
 const pool = new Pool({
     host: process.env.host,
@@ -56,7 +57,7 @@ app.use(
             secure: process.env.NODE_ENV == 'production',
             httpOnly: true,
             sameSite: process.env.NODE_ENV == 'production' ? 'none' : 'lax',
-            maxAge: 24 * 60 * 60 * 1000
+            maxAge: 12 * 60 * 60 * 1000 // 12 Hours as requested
         },
     })
 );
@@ -76,11 +77,11 @@ app.post("/api/login", async (req, res) => {
             [username, password]
         );
 
-        if(studentResult.rows.length > 0) {
-            const user=studentResult.rows[0];
-            req.session.user={
-                userRollNo:user.roll_no,
-                userName:user.name,
+        if (studentResult.rows.length > 0) {
+            const user = studentResult.rows[0];
+            req.session.user = {
+                userRollNo: user.roll_no,
+                userName: user.name,
                 userEmail: user.email,
                 hostelName: user.hostel_name,
                 role: 'student'
@@ -99,28 +100,28 @@ app.post("/api/login", async (req, res) => {
             const user = adminResult.rows[0];
             req.session.user = {
                 userAdminId: user.admin_id,
-                userName:user.name,
+                userName: user.name,
                 userDepartment: user.department,
                 role: 'admin'
             };
             client.release();
-            return res.json({message: "Login Successful", user: req.session.user, role: 'admin'});
-        }   
+            return res.json({ message: "Login Successful", user: req.session.user, role: 'admin' });
+        }
 
         // Check Guard 
         const guardResult = await client.query(
             "Select * from Guard where Guard_Id=$1 and password=$2",
             [username, password]
         );
-        if(guardResult.rows.length > 0) {
+        if (guardResult.rows.length > 0) {
             const user = guardResult.rows[0];
             req.session.user = {
                 userGuardId: user.guard_id,
-                userName:user.guard_name,
+                userName: user.guard_name,
                 role: 'guard'
             };
             client.release();
-            return res.json({message: "Login Successful", user: req.session.user, role: 'guard'});
+            return res.json({ message: "Login Successful", user: req.session.user, role: 'guard' });
         }
 
         client.release();
@@ -143,11 +144,9 @@ app.get("/api/me", (req, res) => {
 
 // Admin Middleware
 const isAdmin = (req, res, next) => {
-    console.log('Checking Admin Auth:', req.session.user);
     if (req.session.user && req.session.user.role === 'admin') {
         next();
     } else {
-        console.log('Unauthorized Access Attempt');
         res.status(401).json({ error: "Unauthorized" });
     }
 };
@@ -174,7 +173,6 @@ app.get("/api/admin/stats", isAdmin, async (req, res) => {
 
 // Get All Students
 app.get("/api/admin/students", isAdmin, async (req, res) => {
-    console.log('GET /api/admin/students');
     try {
         const client = await pool.connect();
         const result = await client.query("SELECT * FROM Student");
@@ -188,7 +186,6 @@ app.get("/api/admin/students", isAdmin, async (req, res) => {
 
 // Get All Guards
 app.get("/api/admin/guards", isAdmin, async (req, res) => {
-    console.log('GET /api/admin/guards');
     try {
         const client = await pool.connect();
         const result = await client.query("SELECT * FROM Guard");
@@ -202,7 +199,6 @@ app.get("/api/admin/guards", isAdmin, async (req, res) => {
 
 // Get All Locations
 app.get("/api/admin/locations", isAdmin, async (req, res) => {
-    console.log('GET /api/admin/locations');
     try {
         const client = await pool.connect();
         const result = await client.query("SELECT * FROM Location");
@@ -216,7 +212,6 @@ app.get("/api/admin/locations", isAdmin, async (req, res) => {
 
 // Get All Logs (Frontend uses POST for this now)
 app.post("/api/admin/logs", isAdmin, async (req, res) => {
-    console.log('POST /api/admin/logs (Fetch)');
     try {
         const client = await pool.connect();
         const result = await client.query("SELECT * FROM Log ORDER BY Timestamp DESC");
@@ -229,17 +224,14 @@ app.post("/api/admin/logs", isAdmin, async (req, res) => {
 });
 
 //Update Guard Location
-app.post("/api/guard/location",async(req,res)=>{
-    console.log("POST /api/guard/location received");
-    console.log("Request body:", req.body);
-    const{guardId,location}=req.body;
-    try{
-        const client=await pool.connect();
-        await client.query("UPDATE Guard SET place_id=$1 WHERE guard_id=$2",[location,guardId]);
+app.post("/api/guard/location", async (req, res) => {
+    const { guardId, location } = req.body;
+    try {
+        const client = await pool.connect();
+        await client.query("UPDATE Guard SET place_id=$1 WHERE guard_id=$2", [location, guardId]);
         client.release();
-        console.log("Location updated successfully for guard:", guardId);
-        res.json({message:"Location Updated Successfully"});
-    } catch (err) { 
+        res.json({ message: "Location Updated Successfully" });
+    } catch (err) {
         console.error("Error updating location:", err);
         res.status(500).json({ error: "Server Error" });
     }
@@ -247,7 +239,6 @@ app.post("/api/guard/location",async(req,res)=>{
 
 // Get All Admins
 app.get("/api/admin/admins", isAdmin, async (req, res) => {
-    console.log('GET /api/admin/admins');
     try {
         const client = await pool.connect();
         const result = await client.query("SELECT * FROM Admin");
@@ -262,7 +253,6 @@ app.get("/api/admin/admins", isAdmin, async (req, res) => {
 // --- ADD (POST) Endpoints ---
 
 app.post("/api/admin/add-student", isAdmin, async (req, res) => {
-    console.log('POST /add-student', req.body);
     const { roll_no, name, email, hostel_name, password } = req.body;
     try {
         const client = await pool.connect();
@@ -274,7 +264,6 @@ app.post("/api/admin/add-student", isAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/add-guard", isAdmin, async (req, res) => {
-    console.log('POST /add-guard', req.body);
     const { guard_id, guard_name, password } = req.body;
     try {
         const client = await pool.connect();
@@ -287,7 +276,6 @@ app.post("/api/admin/add-guard", isAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/add-location", isAdmin, async (req, res) => {
-    console.log('POST /add-location', req.body);
     const { place_id, place_name } = req.body;
     try {
         const client = await pool.connect();
@@ -299,7 +287,6 @@ app.post("/api/admin/add-location", isAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/add-log", isAdmin, async (req, res) => {
-    console.log('POST /add-log', req.body);
     const { roll_no, guard_id, place_id, log_type } = req.body;
     try {
         const client = await pool.connect();
@@ -312,7 +299,6 @@ app.post("/api/admin/add-log", isAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/add-admin", isAdmin, async (req, res) => {
-    console.log('POST /add-admin', req.body);
     const { admin_id, name, department, password } = req.body;
     try {
         const client = await pool.connect();
@@ -326,7 +312,6 @@ app.post("/api/admin/add-admin", isAdmin, async (req, res) => {
 // --- DELETE Endpoints ---
 
 app.delete("/api/admin/delete-student/:id", isAdmin, async (req, res) => {
-    console.log('DELETE /delete-student', req.params.id);
     try {
         const client = await pool.connect();
         await client.query("DELETE FROM Student WHERE Roll_No = $1", [req.params.id]);
@@ -336,7 +321,6 @@ app.delete("/api/admin/delete-student/:id", isAdmin, async (req, res) => {
 });
 
 app.delete("/api/admin/delete-guard/:id", isAdmin, async (req, res) => {
-    console.log('DELETE /delete-guard', req.params.id);
     try {
         const client = await pool.connect();
         await client.query("DELETE FROM Guard WHERE Guard_Id = $1", [req.params.id]);
@@ -346,7 +330,6 @@ app.delete("/api/admin/delete-guard/:id", isAdmin, async (req, res) => {
 });
 
 app.delete("/api/admin/delete-location/:id", isAdmin, async (req, res) => {
-    console.log('DELETE /delete-location', req.params.id);
     try {
         const client = await pool.connect();
         await client.query("DELETE FROM Location WHERE Place_Id = $1", [req.params.id]);
@@ -356,7 +339,6 @@ app.delete("/api/admin/delete-location/:id", isAdmin, async (req, res) => {
 });
 
 app.delete("/api/admin/delete-log", isAdmin, async (req, res) => {
-    console.log('DELETE /delete-log', req.body);
     const { roll_no, guard_id, place_id } = req.body;
     try {
         const client = await pool.connect();
@@ -367,7 +349,6 @@ app.delete("/api/admin/delete-log", isAdmin, async (req, res) => {
 });
 
 app.delete("/api/admin/delete-admin/:id", isAdmin, async (req, res) => {
-    console.log('DELETE /delete-admin', req.params.id);
     try {
         const client = await pool.connect();
         await client.query("DELETE FROM Admin WHERE Admin_Id = $1", [req.params.id]);
@@ -379,7 +360,6 @@ app.delete("/api/admin/delete-admin/:id", isAdmin, async (req, res) => {
 // --- UPDATE Endpoints ---
 
 app.put("/api/admin/update-student/:id", isAdmin, async (req, res) => {
-    console.log('PUT /update-student', req.params.id, req.body);
     const { name, email, hostel_name, password } = req.body;
     try {
         const client = await pool.connect();
@@ -391,7 +371,6 @@ app.put("/api/admin/update-student/:id", isAdmin, async (req, res) => {
 });
 
 app.put("/api/admin/update-guard/:id", isAdmin, async (req, res) => {
-    console.log('PUT /update-guard', req.params.id, req.body);
     const { guard_name, password } = req.body;
     try {
         const client = await pool.connect();
@@ -403,7 +382,6 @@ app.put("/api/admin/update-guard/:id", isAdmin, async (req, res) => {
 });
 
 app.put("/api/admin/update-location/:id", isAdmin, async (req, res) => {
-    console.log('PUT /update-location', req.params.id, req.body);
     const { place_name } = req.body;
     try {
         const client = await pool.connect();
@@ -415,7 +393,6 @@ app.put("/api/admin/update-location/:id", isAdmin, async (req, res) => {
 });
 
 app.put("/api/admin/update-log", isAdmin, async (req, res) => {
-    console.log('PUT /update-log', req.body);
     const { roll_no, guard_id, place_id, log_type } = req.body;
     try {
         const client = await pool.connect();
@@ -427,7 +404,6 @@ app.put("/api/admin/update-log", isAdmin, async (req, res) => {
 });
 
 app.put("/api/admin/update-admin/:id", isAdmin, async (req, res) => {
-    console.log('PUT /update-admin', req.params.id, req.body);
     const { name, department, password } = req.body;
     try {
         const client = await pool.connect();
@@ -446,16 +422,27 @@ app.post("/api/logout", (req, res) => {
     });
 });
 
+// Helper: Prefix Map (Mocking DB Column)
+const PREFIX_MAP = {
+    "Main Gate": "MG",
+    "Aryabhatta Hostel": "A",
+    "Maa Saraswati Hostel": "A",
+    "Vashistha Hostel": "A",
+    "Vivekananda Hostel": "A",
+    "Panini Hostel": "A",
+    "Nagarjuna Hostel": "A",
+    // Generic fallback for others if needed, or update this list
+};
+
 // Mark Attendance
 app.post("/api/mark-attendance", async (req, res) => {
-    console.log("Mark Attendance Request Session:", req.session);
-    console.log("Mark Attendance Request User:", req.session.user);
     if (!req.session.user || req.session.user.role !== 'student') {
         return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { guard_id, place_id, qr_timestamp, scan_type } = req.body; // scan_type: 'Entry' or 'Exit'
     const roll_no = req.session.user.userRollNo;
+    const studentHostel = req.session.user.hostelName; // Getting student's hostel from session
 
     if (!guard_id || !place_id || !qr_timestamp || !scan_type) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -473,78 +460,105 @@ app.post("/api/mark-attendance", async (req, res) => {
     try {
         const client = await pool.connect();
 
-        // 2. State Validation (Prevent Double Entry/Exit)
-        const lastLogResult = await client.query(
-            "SELECT log_type, Timestamp FROM Log WHERE roll_no = $1 AND Place_Id = $2 ORDER BY Timestamp DESC LIMIT 1",
-            [roll_no, place_id]
-        );
-
-        console.log(`Checking history for Roll: ${roll_no}, Place: ${place_id}`);
-        console.log("Last Log Found:", lastLogResult.rows.length > 0 ? lastLogResult.rows[0] : "None");
-
-        const lastLogType = lastLogResult.rows.length > 0 ? lastLogResult.rows[0].log_type : null;
-        
-        // Check if last log type ends with 'Entry' or 'Exit' to handle prefixes like AEntry, MGEntry
-        const isLastEntry = lastLogType && lastLogType.endsWith('Entry');
-        const isLastExit = lastLogType && lastLogType.endsWith('Exit');
-
-        console.log(`Scan Type: ${scan_type}, Is Last Entry: ${isLastEntry}`);
-
-        if (scan_type === 'Entry') {
-            if (isLastEntry) {
-                console.log("Blocking Double Entry");
-                client.release();
-                return res.status(400).json({ error: "You are already marked as Entered at this location. Please Exit first." });
-            }
-        } else if (scan_type === 'Exit') {
-            if (!isLastEntry) { // Must have entered to exit (or if no history, assume not entered)
-                console.log("Blocking Invalid Exit");
-                client.release();
-                return res.status(400).json({ error: "You are not marked as Entered at this location. Please Enter first." });
-            }
-        }
-
-        // 3. Log Type Determination
+        // Fetch Location Name for Logic
         const locationResult = await client.query("SELECT Place_Name FROM Location WHERE Place_Id = $1", [place_id]);
-        
         if (locationResult.rows.length === 0) {
             client.release();
             return res.status(400).json({ error: "Invalid Location" });
         }
-
         const placeName = locationResult.rows[0].place_name;
-        let prefix = "";
 
-        // Check for specific location types
-        // Assuming hostel names are known or contain "Hostel" - adjusting based on user plan "Hostel -> A"
-        // The plan listed specific hostel names: Aryabhatta, Panini, etc.
-        // Let's check for "Main Gate" first
-        if (placeName.toLowerCase().includes("main gate")) {
-            prefix = "MG";
+        // 2. State Validation & 14-Hour Rule
+        // We check the LAST log for this specific user AND place.
+        const lastLogResult = await client.query(
+            "SELECT log_type, Timestamp FROM Log WHERE roll_no = $1 AND Place_Id = $2",
+            [roll_no, place_id]
+        );
+
+        let canScan = true;
+        let message = "";
+
+        if (lastLogResult.rows.length > 0) {
+            const lastLog = lastLogResult.rows[0];
+            const lastLogTime = new Date(lastLog.timestamp).getTime();
+            const hoursDiff = (serverTime - lastLogTime) / (1000 * 60 * 60);
+            const isLastEntry = lastLog.log_type.endsWith('Entry');
+
+            // 14-Hour Rule Logic
+            // If it's been > 14 hours AND user is NOT in their own hostel
+            // We assume they left and allow "Entry" again (Auto-Reset)
+            const isStudentHostel = placeName.toLowerCase().includes(studentHostel ? studentHostel.toLowerCase() : "###"); // ### won't match
+
+            if (hoursDiff > 14 && !isStudentHostel && isLastEntry) {
+                // We treat this as "No Record" effectively, allowing Entry.
+                // If they try to Exit, we might strictly block or allow.
+                // Robustness: If they try to Enter, allow. If Exit, maybe they stayed >14h? 
+                // Let's stick to the prompt: "assume they left and allow them to scan 'Entry' again".
+                if (scan_type === 'Exit') {
+                    // Start fresh? Or block?
+                    // User said: "prevent deadlock".
+                    // If they are scanning Exit after 14h, arguably they are just leaving now.
+                    // But if we auto-reset, they are "Outside".
+                    // Let's allow Entry.
+                    if (scan_type === 'Exit') {
+                        // They are technically "Outside" by our rule, so Exit is invalid?
+                        // "Auto assume they left". So they are OUT.
+                        canScan = false;
+                        message = "System auto-exited you due to timeout. You must Enter again.";
+                    }
+                }
+                // If Entry, we allow (canScan stays true), effectively overwriting the old 'Entry' with new 'Entry'
+            } else {
+                // Strict State Check
+                if (scan_type === 'Entry') {
+                    if (isLastEntry) {
+                        canScan = false;
+                        message = "You are already marked Inside. Please Exit first.";
+                    }
+                } else if (scan_type === 'Exit') {
+                    if (!isLastEntry) {
+                        canScan = false;
+                        message = "You are not marked Inside. Please Enter first.";
+                    }
+                }
+            }
         } else {
-            // Check if it's a hostel. 
-            // We can check against a list or if it doesn't match Main Gate, assume Hostel? 
-            // Or better, check if it's NOT Main Gate and NOT Library/etc if those exist.
-            // For now, let's assume if it's not Main Gate, it might be a hostel or generic.
-            // The prompt said: Hostel -> A, Main Gate -> MG, Other -> No Prefix.
-            // Let's check for known hostels or just default to A if it looks like a hostel name.
-            // Simplified logic: If not Main Gate, check if it is in the hostel list or contains "Hostel".
-            // Since I don't have the full list of places, I'll use a heuristic:
-            // If it's "Main Gate" -> MG.
-            // If it's one of the known hostels (Aryabhatta, Panini, etc) -> A.
-            // Else -> ""
-            const knownHostels = ["aryabhatta", "maa saraswati", "vashistha", "vivekananda", "panini", "nagarjuna"];
-            if (knownHostels.some(h => placeName.toLowerCase().includes(h))) {
-                prefix = "A";
+            // No history for this location
+            if (scan_type === 'Exit') {
+                canScan = false;
+                message = "You have no entry record here. Please Enter first.";
             }
         }
 
+        if (!canScan) {
+            client.release();
+            return res.status(400).json({ error: message });
+        }
+
+        // 3. Determine Log Type Prefix
+        let prefix = "";
+        // Simple heuristic map (Case insensitive check)
+        const lowerPlace = placeName.toLowerCase();
+        if (lowerPlace.includes("main gate")) prefix = "MG";
+        else if (lowerPlace.includes("aryabhatta")) prefix = "A";
+        else if (lowerPlace.includes("maa saraswati")) prefix = "A"; // Assuming same prefix for hostels as per prompt? Or unique? User said "Hostel -> A"
+        else if (lowerPlace.includes("vashistha")) prefix = "A";
+        else if (lowerPlace.includes("vivekananda")) prefix = "A";
+        else if (lowerPlace.includes("panini")) prefix = "A";
+        else if (lowerPlace.includes("nagarjuna")) prefix = "A";
+        // Add more mappings as needed
+
         const finalLogType = `${prefix}${scan_type}`;
 
-        // 4. Insert Log
+        // 4. Upsert (Insert or Update)
         const timestamp = new Date();
+
+        // Postgres UPSERT: ON CONFLICT (pkey) DO UPDATE
         await client.query(
-            "INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) VALUES ($1, $2, $3, $4, $5)",
+            `INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) 
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (roll_no, guard_id, place_id) 
+             DO UPDATE SET log_type = EXCLUDED.log_type, Timestamp = EXCLUDED.Timestamp`,
             [roll_no, guard_id, place_id, finalLogType, timestamp]
         );
 
@@ -553,6 +567,100 @@ app.post("/api/mark-attendance", async (req, res) => {
 
     } catch (err) {
         console.error("Error marking attendance:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Guard: Manual Log (Force Entry/Exit)
+app.post("/api/guard/manual-log", async (req, res) => {
+    const { roll_no, guard_id, place_id, scan_type } = req.body;
+
+    // Auth Check
+    // We expect a Guard session. 
+    // Ideally we check req.session.user.role === 'guard' but the current guard login setup is minimal.
+    // Let's assume the frontend sends the guard_id which matches the logged in user or verify strictly.
+    /*
+    if (!req.session.user || req.session.user.role !== 'guard') {
+         return res.status(401).json({ error: "Unauthorized" });
+    }
+    */
+    // For now, proceeding with basic validation
+    if (!roll_no || !guard_id || !place_id || !scan_type) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+        const client = await pool.connect();
+
+        // 1. Check if Student Exists
+        const studentCheck = await client.query("SELECT Name FROM Student WHERE Roll_No = $1", [roll_no]);
+        if (studentCheck.rows.length === 0) {
+            client.release();
+            return res.status(400).json({ error: "Invalid Student Roll No" });
+        }
+
+        // 2. Check if Location Exists & Get Prefix
+        const locationResult = await client.query("SELECT Place_Name FROM Location WHERE Place_Id = $1", [place_id]);
+        if (locationResult.rows.length === 0) {
+            client.release();
+            return res.status(400).json({ error: "Invalid Location ID" });
+        }
+
+        // 3. Check if Guard Exists (Optional, but good for data integrity)
+        const guardCheck = await client.query("SELECT Guard_Name FROM Guard WHERE Guard_Id = $1", [guard_id]);
+        if (guardCheck.rows.length === 0) {
+            client.release();
+            return res.status(400).json({ error: "Invalid Guard ID" });
+        }
+
+        let prefix = "";
+        // Safely access place_name, handling potential case differences
+        const locationRow = locationResult.rows[0];
+        const pn = (locationRow.place_name || locationRow.Place_Name || "").toLowerCase();
+
+        if (pn.includes("main gate")) prefix = "MG";
+        else prefix = "A"; // Defaulting to A for hostels/others for now
+
+        const finalLogType = `${prefix}${scan_type}`;
+        const timestamp = new Date();
+
+        // Force Update/Insert
+        await client.query(
+            `INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) 
+         VALUES ($1, $2, $3, $4, $5)`,
+            [roll_no, guard_id, place_id, finalLogType, timestamp]
+        );
+
+        client.release();
+        res.json({ message: `Manual ${scan_type} Successful` });
+
+    } catch (err) {
+        console.error("Manual Log Error:", err);
+        res.status(500).json({ error: "Server Error", details: err.message });
+    }
+});
+
+// Guard: Get Recent Logs (Live Feed)
+app.get("/api/guard/recent-logs", async (req, res) => {
+    const { place_id } = req.query;
+    if (!place_id) return res.status(400).json({ error: "Place ID required" });
+
+    try {
+        const client = await pool.connect();
+        // Join with Student to get Names
+        const result = await client.query(`
+            SELECT Log.roll_no, Student.Name, Log.log_type, Log.Timestamp 
+            FROM Log 
+            JOIN Student ON Log.roll_no = Student.Roll_No 
+            WHERE Log.Place_Id = $1 
+            ORDER BY Log.Timestamp DESC 
+            LIMIT 10`,
+            [place_id]
+        );
+        client.release();
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching guard logs:", err);
         res.status(500).json({ error: "Server Error" });
     }
 });

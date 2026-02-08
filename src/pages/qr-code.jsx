@@ -46,20 +46,19 @@ function QRCodeReactOnly({
     return (
         <div style={{ display: 'inline-block', textAlign: 'center' }}>
             <div style={{ marginBottom: 8 }}>
-                <strong>Payload (JSON)</strong>
-                {/* <div style={{ fontFamily: 'monospace', marginTop: 4 }}>{displayedPayload}</div> */}
-            </div>
 
 
-            {dataUrl ? (
-                <img src={dataUrl} alt="QR code" style={{ width: 220, height: 220 }} />
-            ) : (
-                <div>Generating QR...</div>
-            )}
+
+                {dataUrl ? (
+                    <img src={dataUrl} alt="QR code" style={{ width: 220, height: 220 }} />
+                ) : (
+                    <div>Generating QR...</div>
+                )}
 
 
-            <div style={{ marginTop: 8 }}>
-                {/* <button onClick={refreshTimestamp}>Refresh timestamp</button> */}
+                <div style={{ marginTop: 8 }}>
+                    {/* <button onClick={refreshTimestamp}>Refresh timestamp</button> */}
+                </div>
             </div>
         </div>
     );
