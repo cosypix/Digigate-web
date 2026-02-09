@@ -556,9 +556,7 @@ app.post("/api/mark-attendance", async (req, res) => {
         // Postgres UPSERT: ON CONFLICT (pkey) DO UPDATE
         await client.query(
             `INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) 
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (roll_no, guard_id, place_id) 
-             DO UPDATE SET log_type = EXCLUDED.log_type, Timestamp = EXCLUDED.Timestamp`,
+             VALUES ($1, $2, $3, $4, $5)`,
             [roll_no, guard_id, place_id, finalLogType, timestamp]
         );
 
