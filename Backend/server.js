@@ -478,11 +478,16 @@ app.post("/api/mark-attendance", async (req, res) => {
         let canScan = true;
         let message = "";
 
+        console.log(`[DEBUG] Marking Attendance: Roll: ${roll_no}, Place: ${placeName} (${place_id}), ScanType: ${scan_type}`);
+
         if (lastLogResult.rows.length > 0) {
             const lastLog = lastLogResult.rows[0];
             const lastLogTime = new Date(lastLog.timestamp).getTime();
             const hoursDiff = (serverTime - lastLogTime) / (1000 * 60 * 60);
             const isLastEntry = lastLog.log_type.endsWith('Entry');
+
+            console.log(`[DEBUG] Last Log Found: Type: ${lastLog.log_type}, Time: ${lastLog.timestamp}, isLastEntry: ${isLastEntry}, HoursDiff: ${hoursDiff.toFixed(2)}`);
+
 
             // 14-Hour Rule Logic
             // If it's been > 14 hours AND user is NOT in their own hostel
@@ -523,6 +528,7 @@ app.post("/api/mark-attendance", async (req, res) => {
                 }
             }
         } else {
+            console.log("[DEBUG] No history found for this location.");
             // No history for this location
             if (scan_type === 'Exit') {
                 canScan = false;
@@ -531,9 +537,11 @@ app.post("/api/mark-attendance", async (req, res) => {
         }
 
         if (!canScan) {
+            console.log(`[DEBUG] Scan Blocked: ${message}`);
             client.release();
             return res.status(400).json({ error: message });
         }
+        console.log("[DEBUG] Scan Allowed.");
 
         // 3. Determine Log Type Prefix
         let prefix = "";
