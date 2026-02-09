@@ -471,7 +471,7 @@ app.post("/api/mark-attendance", async (req, res) => {
         // 2. State Validation & 14-Hour Rule
         // We check the LAST log for this specific user AND place.
         const lastLogResult = await client.query(
-            "SELECT log_type, Timestamp FROM Log WHERE roll_no = $1 AND Place_Id = $2",
+            "SELECT log_type, Timestamp FROM Log WHERE roll_no = $1 AND Place_Id = $2 ORDER BY Timestamp DESC LIMIT 1",
             [roll_no, place_id]
         );
 
