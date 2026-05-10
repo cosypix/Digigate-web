@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api.js';
 import './admin-dashboard.css';
 
 
@@ -71,7 +72,7 @@ const AdminDashboard = () => {
 
     const fetchAdminDetails = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/me`, { credentials: "include" });
+            const res = await apiFetch('/api/me');
             if (res.ok) {
                 const data = await res.json();
                 if (data.loggedIn) {
@@ -129,12 +130,11 @@ const AdminDashboard = () => {
         // Optimization: check if logs are already populated? 
         // But logs might change, so fetching fresh is safer.
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/logs`, {
+            const res = await apiFetch('/api/admin/logs', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                credentials: "include",
             });
             if (res.ok) {
                 const allLogs = await res.json();
@@ -148,7 +148,7 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/stats`, { credentials: 'include' });
+            const res = await apiFetch('/api/admin/stats');
             if (res.ok) {
                 const data = await res.json();
                 setStats(data);
@@ -164,33 +164,32 @@ const AdminDashboard = () => {
 
     const fetchStudents = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/students`, { credentials: 'include' });
+            const res = await apiFetch('/api/admin/students');
             if (res.ok) setStudents(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchGuards = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/guards`, { credentials: 'include' });
+            const res = await apiFetch('/api/admin/guards');
             if (res.ok) setGuards(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchLocations = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/locations`, { method: "GET", credentials: 'include' });
+            const res = await apiFetch('/api/admin/locations', { method: "GET" });
             if (res.ok) setLocations(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchLogs = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/logs`, {
+            const res = await apiFetch('/api/admin/logs', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                credentials: 'include'
             });
             if (res.ok) setLogs(await res.json());
         } catch (err) { console.error(err); }
@@ -198,26 +197,25 @@ const AdminDashboard = () => {
 
     const fetchAdmins = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/admins`, { credentials: 'include' });
+            const res = await apiFetch('/api/admin/admins');
             if (res.ok) setAdmins(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const handleLogout = async () => {
-        await fetch(`${import.meta.env.VITE_Backend_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+        await apiFetch('/api/logout', { method: 'POST' });
         navigate('/login');
     };
 
     const handleAddStudent = async (e) => {
         e.preventDefault();
-        const url = editingStudent ? `${import.meta.env.VITE_Backend_URL}/api/admin/update-student/${newStudent.roll_no}` : `${import.meta.env.VITE_Backend_URL}/api/admin/add-student`;
+        const url = editingStudent ? `/api/admin/update-student/${newStudent.roll_no}` : `/api/admin/add-student`;
         const method = editingStudent ? 'PUT' : 'POST';
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newStudent),
-                credentials: 'include'
             });
             if (res.ok) {
                 setShowAddModal(false);
@@ -230,14 +228,13 @@ const AdminDashboard = () => {
 
     const handleAddGuard = async (e) => {
         e.preventDefault();
-        const url = editingGuard ? `${import.meta.env.VITE_Backend_URL}/api/admin/update-guard/${newGuard.guard_id}` : `${import.meta.env.VITE_Backend_URL}/api/admin/add-guard`;
+        const url = editingGuard ? `/api/admin/update-guard/${newGuard.guard_id}` : `/api/admin/add-guard`;
         const method = editingGuard ? 'PUT' : 'POST';
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newGuard),
-                credentials: 'include'
             });
             if (res.ok) {
                 setShowAddGuardModal(false);
@@ -250,14 +247,13 @@ const AdminDashboard = () => {
 
     const handleAddLocation = async (e) => {
         e.preventDefault();
-        const url = editingLocation ? `${import.meta.env.VITE_Backend_URL}/api/admin/update-location/${newLocation.place_id}` : `${import.meta.env.VITE_Backend_URL}/api/admin/add-location`;
+        const url = editingLocation ? `/api/admin/update-location/${newLocation.place_id}` : `/api/admin/add-location`;
         const method = editingLocation ? 'PUT' : 'POST';
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newLocation),
-                credentials: 'include'
             });
             if (res.ok) {
                 setShowAddLocationModal(false);
@@ -270,14 +266,13 @@ const AdminDashboard = () => {
 
     const handleAddLog = async (e) => {
         e.preventDefault();
-        const url = editingLog ? `${import.meta.env.VITE_Backend_URL}/api/admin/update-log` : `${import.meta.env.VITE_Backend_URL}/api/admin/add-log`;
+        const url = editingLog ? `/api/admin/update-log` : `/api/admin/add-log`;
         const method = editingLog ? 'PUT' : 'POST';
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newLog),
-                credentials: 'include'
             });
             if (res.ok) {
                 setShowAddLogModal(false);
@@ -290,14 +285,13 @@ const AdminDashboard = () => {
 
     const handleAddAdmin = async (e) => {
         e.preventDefault();
-        const url = editingAdmin ? `${import.meta.env.VITE_Backend_URL}/api/admin/update-admin/${newAdmin.admin_id}` : `${import.meta.env.VITE_Backend_URL}/api/admin/add-admin`;
+        const url = editingAdmin ? `/api/admin/update-admin/${newAdmin.admin_id}` : `/api/admin/add-admin`;
         const method = editingAdmin ? 'PUT' : 'POST';
         try {
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newAdmin),
-                credentials: 'include'
             });
             if (res.ok) {
                 setShowAddAdminModal(false);
@@ -312,7 +306,7 @@ const AdminDashboard = () => {
     const handleDeleteStudent = async (id) => {
         if (!window.confirm('Are you sure you want to delete this student?')) return;
         try {
-            await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/delete-student/${id}`, { method: 'DELETE', credentials: 'include' });
+            await apiFetch(`/api/admin/delete-student/${id}`, { method: 'DELETE' });
             fetchStudents();
         } catch (err) { console.error(err); }
     };
@@ -320,7 +314,7 @@ const AdminDashboard = () => {
     const handleDeleteGuard = async (id) => {
         if (!window.confirm('Are you sure you want to delete this guard?')) return;
         try {
-            await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/delete-guard/${id}`, { method: 'DELETE', credentials: 'include' });
+            await apiFetch(`/api/admin/delete-guard/${id}`, { method: 'DELETE' });
             fetchGuards();
         } catch (err) { console.error(err); }
     };
@@ -328,7 +322,7 @@ const AdminDashboard = () => {
     const handleDeleteLocation = async (id) => {
         if (!window.confirm('Are you sure you want to delete this location?')) return;
         try {
-            await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/delete-location/${id}`, { method: 'DELETE', credentials: 'include' });
+            await apiFetch(`/api/admin/delete-location/${id}`, { method: 'DELETE' });
             fetchLocations();
         } catch (err) { console.error(err); }
     };
@@ -336,11 +330,10 @@ const AdminDashboard = () => {
     const handleDeleteLog = async (log) => {
         if (!window.confirm('Are you sure you want to delete this log?')) return;
         try {
-            await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/delete-log`, {
+            await apiFetch('/api/admin/delete-log', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roll_no: log.roll_no, guard_id: log.guard_id, place_id: log.place_id }),
-                credentials: 'include'
             });
             fetchLogs();
         } catch (err) { console.error(err); }
@@ -349,7 +342,7 @@ const AdminDashboard = () => {
     const handleDeleteAdmin = async (id) => {
         if (!window.confirm('Are you sure you want to delete this admin?')) return;
         try {
-            await fetch(`${import.meta.env.VITE_Backend_URL}/api/admin/delete-admin/${id}`, { method: 'DELETE', credentials: 'include' });
+            await apiFetch(`/api/admin/delete-admin/${id}`, { method: 'DELETE' });
             fetchAdmins();
         } catch (err) { console.error(err); }
     };

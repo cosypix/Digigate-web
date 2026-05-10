@@ -1,17 +1,47 @@
-create table Student(Roll_No varchar(20) not null primary key, Name varchar(25) not null, Email varchar(50) not null, Hostel_Name varchar(50));
+-- ============================================
+-- DigiGate Tenant Schema Template
+-- ============================================
+-- This file is executed inside each tenant's schema
+-- during provisioning (via tenantManager.js).
+-- It creates all the tables a college needs.
+-- ============================================
 
-create table Location (Place_Id varchar(20) not null Primary key, Place_Name varchar(100) not null);
+CREATE TABLE Student (
+    Roll_No VARCHAR(20) NOT NULL PRIMARY KEY,
+    Name VARCHAR(25) NOT NULL,
+    Email VARCHAR(50) NOT NULL,
+    Hostel_Name VARCHAR(50),
+    Password VARCHAR(100)
+);
 
-create table Guard (Guard_Id varchar(20) not null Primary Key, Guard_Name varchar(50) not null, 
-Place_Id varchar(20), foreign key (Place_Id) references Location(Place_Id));
+CREATE TABLE Location (
+    Place_Id VARCHAR(20) NOT NULL PRIMARY KEY,
+    Place_Name VARCHAR(100) NOT NULL
+);
 
-create table Admin(Admin_Id varchar(20) not null Primary key, Name varchar(50) not null, Department varchar(50));
+CREATE TABLE Guard (
+    Guard_Id VARCHAR(20) NOT NULL PRIMARY KEY,
+    Guard_Name VARCHAR(50) NOT NULL,
+    Place_Id VARCHAR(20),
+    Password VARCHAR(100),
+    FOREIGN KEY (Place_Id) REFERENCES Location(Place_Id)
+);
 
-create table Log(roll_no varchar(20) not null, Guard_Id varchar(20) not null, Place_Id varchar(20) not null, log_type varchar(15) not null, Timestamp timestamp not null,
-primary key(roll_no,guard_id,place_id),
-foreign key (roll_no) references student(roll_no);
+CREATE TABLE Admin (
+    Admin_Id VARCHAR(20) NOT NULL PRIMARY KEY,
+    Name VARCHAR(50) NOT NULL,
+    Department VARCHAR(50),
+    Password VARCHAR(100)
+);
 
-alter table log add foreign key (place_id) references Location(place_id);
-
-alter table log add foreign key (guard_id) references Guard(guard_id);
-
+CREATE TABLE Log (
+    roll_no VARCHAR(20) NOT NULL,
+    Guard_Id VARCHAR(20) NOT NULL,
+    Place_Id VARCHAR(20) NOT NULL,
+    log_type VARCHAR(15) NOT NULL,
+    Timestamp TIMESTAMP NOT NULL,
+    PRIMARY KEY (roll_no, Guard_Id, Place_Id),
+    FOREIGN KEY (roll_no) REFERENCES Student(Roll_No),
+    FOREIGN KEY (Place_Id) REFERENCES Location(Place_Id),
+    FOREIGN KEY (Guard_Id) REFERENCES Guard(Guard_Id)
+);

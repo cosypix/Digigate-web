@@ -4,6 +4,10 @@ import session from "express-session";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { Pool } from 'pg';
+import { OAuth2Client } from 'google-auth-library';
+import { lookupTenant, provisionTenant, runMigration, invalidateCache } from './tenantManager.js';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const app = express();
 
@@ -62,73 +66,225 @@ app.use(
     })
 );
 
-//Login Route
-app.post("/api/login", async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: "Username and Password are required." });
+// ============================================
+// Tenant Resolution Middleware
+// ============================================
+// Resolves the tenant from session or X-Tenant-Domain header,
+// then attaches req.getClient() which returns a pg client with
+// search_path already set to the tenant's schema.
+// Uses monkey-patched release to always reset search_path.
+// ============================================
+const TENANT_SKIP_PATHS = ['/api/superadmin', '/api/me', '/api/logout', '/api/public'];
+
+app.use('/api', async (req, res, next) => {
+    // Skip tenant resolution for superadmin & stateless routes
+    if (TENANT_SKIP_PATHS.some(p => req.path.startsWith(p.replace('/api', '')))) {
+        return next();
     }
+
+    // Priority: session domain > header
+    const domain = req.session?.user?.domain
+        || req.headers['x-tenant-domain'];
+
+    if (!domain) {
+        return res.status(400).json({ error: "Missing institute domain. Please log in again." });
+    }
+
+    try {
+        const tenant = await lookupTenant(pool, domain);
+        req.tenantDomain = domain;
+        req.tenantSchema = tenant.schema_name;
+        req.tenantName = tenant.institute_name;
+
+        // Attach a getClient helper that sets search_path and
+        // monkey-patches release to reset it before returning to pool
+        req.getClient = async () => {
+            const client = await pool.connect();
+            await client.query(`SET search_path TO "${tenant.schema_name}"`);
+
+            const originalRelease = client.release.bind(client);
+            let released = false;
+            client.release = async () => {
+                if (released) return;
+                released = true;
+                try {
+                    await client.query('SET search_path TO public');
+                } catch (_) { /* connection may be dead, that's ok */ }
+                originalRelease();
+            };
+
+            return client;
+        };
+
+        next();
+    } catch (err) {
+        console.error('Tenant resolution failed:', err.message);
+        res.status(404).json({ error: "Unregistered Institute" });
+    }
+});
+
+// Public endpoint to get list of institutes for the login dropdown
+app.get("/api/public/tenants", async (req, res) => {
     try {
         const client = await pool.connect();
-
-        // Check Student
-        const studentResult = await client.query(
-            "Select * from student where roll_no=$1 and password=$2",
-            [username, password]
-        );
-
-        if (studentResult.rows.length > 0) {
-            const user = studentResult.rows[0];
-            req.session.user = {
-                userRollNo: user.roll_no,
-                userName: user.name,
-                userEmail: user.email,
-                hostelName: user.hostel_name,
-                role: 'student'
-            };
-            client.release();
-            return res.json({ message: "Login Successful", user: req.session.user, role: 'student' });
-        }
-
-        // Check Admin
-        const adminResult = await client.query(
-            "Select * from Admin where Admin_Id=$1 and password=$2",
-            [username, password]
-        );
-
-        if (adminResult.rows.length > 0) {
-            const user = adminResult.rows[0];
-            req.session.user = {
-                userAdminId: user.admin_id,
-                userName: user.name,
-                userDepartment: user.department,
-                role: 'admin'
-            };
-            client.release();
-            return res.json({ message: "Login Successful", user: req.session.user, role: 'admin' });
-        }
-
-        // Check Guard 
-        const guardResult = await client.query(
-            "Select * from Guard where Guard_Id=$1 and password=$2",
-            [username, password]
-        );
-        if (guardResult.rows.length > 0) {
-            const user = guardResult.rows[0];
-            req.session.user = {
-                userGuardId: user.guard_id,
-                userName: user.guard_name,
-                role: 'guard'
-            };
-            client.release();
-            return res.json({ message: "Login Successful", user: req.session.user, role: 'guard' });
-        }
-
+        // Only fetch name and domain, not internal schema names
+        const result = await client.query('SELECT institute_name, domain FROM tenants WHERE is_active = TRUE ORDER BY institute_name ASC');
         client.release();
-        return res.status(401).json({ error: "Invalid Credentials." });
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching public tenants:", err);
+        res.status(500).json({ error: "Server Error" });
     }
-    catch (err) {
-        console.error("Error during Login:", err);
+});
+
+// ============================================
+// Role-Based Login Routes
+// ============================================
+// Each role hits exactly one table — no cascading queries.
+// Student login supports both password and Google OAuth.
+// ============================================
+
+// Student Login (Password + Google OAuth)
+app.post("/api/login/student", async (req, res) => {
+    const { roll_no, password, google_token } = req.body;
+
+    try {
+        const client = await req.getClient();
+
+        // --- Google OAuth Path ---
+        if (google_token) {
+            try {
+                const ticket = await googleClient.verifyIdToken({
+                    idToken: google_token,
+                    audience: process.env.GOOGLE_CLIENT_ID,
+                });
+                const payload = ticket.getPayload();
+                const email = payload.email;
+
+                const result = await client.query(
+                    "SELECT * FROM Student WHERE Email = $1",
+                    [email]
+                );
+
+                if (result.rows.length === 0) {
+                    client.release();
+                    return res.status(401).json({ error: "Email not found in institute records. Please contact your Admin." });
+                }
+
+                const user = result.rows[0];
+                req.session.user = {
+                    userRollNo: user.roll_no,
+                    userName: user.name,
+                    userEmail: user.email,
+                    hostelName: user.hostel_name,
+                    domain: req.tenantDomain,
+                    role: 'student'
+                };
+                client.release();
+                return res.json({ message: "Login Successful", user: req.session.user, role: 'student' });
+            } catch (tokenErr) {
+                client.release();
+                console.error("Google token verification failed:", tokenErr.message);
+                return res.status(401).json({ error: "Google authentication failed. Please try again." });
+            }
+        }
+
+        // --- Password Path ---
+        if (!roll_no || !password) {
+            client.release();
+            return res.status(400).json({ error: "Roll No and Password are required." });
+        }
+
+        const result = await client.query(
+            "SELECT * FROM Student WHERE roll_no = $1 AND password = $2",
+            [roll_no, password]
+        );
+
+        if (result.rows.length === 0) {
+            client.release();
+            return res.status(401).json({ error: "Invalid Roll No or Password." });
+        }
+
+        const user = result.rows[0];
+        req.session.user = {
+            userRollNo: user.roll_no,
+            userName: user.name,
+            userEmail: user.email,
+            hostelName: user.hostel_name,
+            domain: req.tenantDomain,
+            role: 'student'
+        };
+        client.release();
+        return res.json({ message: "Login Successful", user: req.session.user, role: 'student' });
+    } catch (err) {
+        console.error("Student login error:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Guard Login (Password only)
+app.post("/api/login/guard", async (req, res) => {
+    const { guard_id, password } = req.body;
+    if (!guard_id || !password) {
+        return res.status(400).json({ error: "Guard ID and Password are required." });
+    }
+    try {
+        const client = await req.getClient();
+        const result = await client.query(
+            "SELECT * FROM Guard WHERE Guard_Id = $1 AND password = $2",
+            [guard_id, password]
+        );
+
+        if (result.rows.length === 0) {
+            client.release();
+            return res.status(401).json({ error: "Invalid Guard ID or Password." });
+        }
+
+        const user = result.rows[0];
+        req.session.user = {
+            userGuardId: user.guard_id,
+            userName: user.guard_name,
+            domain: req.tenantDomain,
+            role: 'guard'
+        };
+        client.release();
+        return res.json({ message: "Login Successful", user: req.session.user, role: 'guard' });
+    } catch (err) {
+        console.error("Guard login error:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Admin Login (Password only)
+app.post("/api/login/admin", async (req, res) => {
+    const { admin_id, password } = req.body;
+    if (!admin_id || !password) {
+        return res.status(400).json({ error: "Admin ID and Password are required." });
+    }
+    try {
+        const client = await req.getClient();
+        const result = await client.query(
+            "SELECT * FROM Admin WHERE Admin_Id = $1 AND password = $2",
+            [admin_id, password]
+        );
+
+        if (result.rows.length === 0) {
+            client.release();
+            return res.status(401).json({ error: "Invalid Admin ID or Password." });
+        }
+
+        const user = result.rows[0];
+        req.session.user = {
+            userAdminId: user.admin_id,
+            userName: user.name,
+            userDepartment: user.department,
+            domain: req.tenantDomain,
+            role: 'admin'
+        };
+        client.release();
+        return res.json({ message: "Login Successful", user: req.session.user, role: 'admin' });
+    } catch (err) {
+        console.error("Admin login error:", err);
         res.status(500).json({ error: "Server Error" });
     }
 });
@@ -154,7 +310,7 @@ const isAdmin = (req, res, next) => {
 // Admin Dashboard Stats
 app.get("/api/admin/stats", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const studentCount = await client.query("SELECT COUNT(*) FROM Student");
         const guardCount = await client.query("SELECT COUNT(*) FROM Guard");
         const recentLogs = await client.query("SELECT * FROM Log ORDER BY Timestamp DESC LIMIT 5");
@@ -174,7 +330,7 @@ app.get("/api/admin/stats", isAdmin, async (req, res) => {
 // Get All Students
 app.get("/api/admin/students", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const result = await client.query("SELECT * FROM Student");
         client.release();
         res.json(result.rows);
@@ -187,7 +343,7 @@ app.get("/api/admin/students", isAdmin, async (req, res) => {
 // Get All Guards
 app.get("/api/admin/guards", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const result = await client.query("SELECT * FROM Guard");
         client.release();
         res.json(result.rows);
@@ -200,7 +356,7 @@ app.get("/api/admin/guards", isAdmin, async (req, res) => {
 // Get All Locations
 app.get("/api/admin/locations", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const result = await client.query("SELECT * FROM Location");
         client.release();
         res.json(result.rows);
@@ -213,7 +369,7 @@ app.get("/api/admin/locations", isAdmin, async (req, res) => {
 // Get All Logs (Frontend uses POST for this now)
 app.post("/api/admin/logs", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const result = await client.query("SELECT * FROM Log ORDER BY Timestamp DESC");
         client.release();
         res.json(result.rows);
@@ -227,7 +383,7 @@ app.post("/api/admin/logs", isAdmin, async (req, res) => {
 app.post("/api/guard/location", async (req, res) => {
     const { guardId, location } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("UPDATE Guard SET place_id=$1 WHERE guard_id=$2", [location, guardId]);
         client.release();
         res.json({ message: "Location Updated Successfully" });
@@ -240,7 +396,7 @@ app.post("/api/guard/location", async (req, res) => {
 // Get All Admins
 app.get("/api/admin/admins", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const result = await client.query("SELECT * FROM Admin");
         client.release();
         res.json(result.rows);
@@ -255,7 +411,7 @@ app.get("/api/admin/admins", isAdmin, async (req, res) => {
 app.post("/api/admin/add-student", isAdmin, async (req, res) => {
     const { roll_no, name, email, hostel_name, password } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("INSERT INTO Student (Roll_No, Name, Email, Hostel_Name, Password) VALUES ($1, $2, $3, $4, $5)",
             [roll_no, name, email, hostel_name, password]);
         client.release();
@@ -266,7 +422,7 @@ app.post("/api/admin/add-student", isAdmin, async (req, res) => {
 app.post("/api/admin/add-guard", isAdmin, async (req, res) => {
     const { guard_id, guard_name, password } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         // Note: Place_Id is nullable and we removed it from frontend input, so we don't insert it (or insert NULL)
         await client.query("INSERT INTO Guard (Guard_Id, Guard_Name, Password) VALUES ($1, $2, $3)",
             [guard_id, guard_name, password]);
@@ -278,7 +434,7 @@ app.post("/api/admin/add-guard", isAdmin, async (req, res) => {
 app.post("/api/admin/add-location", isAdmin, async (req, res) => {
     const { place_id, place_name } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("INSERT INTO Location (Place_Id, Place_Name) VALUES ($1, $2)",
             [place_id, place_name]);
         client.release();
@@ -289,7 +445,7 @@ app.post("/api/admin/add-location", isAdmin, async (req, res) => {
 app.post("/api/admin/add-log", isAdmin, async (req, res) => {
     const { roll_no, guard_id, place_id, log_type } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const timestamp = new Date();
         await client.query("INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) VALUES ($1, $2, $3, $4, $5)",
             [roll_no, guard_id, place_id, log_type, timestamp]);
@@ -301,7 +457,7 @@ app.post("/api/admin/add-log", isAdmin, async (req, res) => {
 app.post("/api/admin/add-admin", isAdmin, async (req, res) => {
     const { admin_id, name, department, password } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("INSERT INTO Admin (Admin_Id, Name, Department, Password) VALUES ($1, $2, $3, $4)",
             [admin_id, name, department, password]);
         client.release();
@@ -313,7 +469,7 @@ app.post("/api/admin/add-admin", isAdmin, async (req, res) => {
 
 app.delete("/api/admin/delete-student/:id", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("DELETE FROM Student WHERE Roll_No = $1", [req.params.id]);
         client.release();
         res.json({ message: "Student deleted" });
@@ -322,7 +478,7 @@ app.delete("/api/admin/delete-student/:id", isAdmin, async (req, res) => {
 
 app.delete("/api/admin/delete-guard/:id", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("DELETE FROM Guard WHERE Guard_Id = $1", [req.params.id]);
         client.release();
         res.json({ message: "Guard deleted" });
@@ -331,7 +487,7 @@ app.delete("/api/admin/delete-guard/:id", isAdmin, async (req, res) => {
 
 app.delete("/api/admin/delete-location/:id", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("DELETE FROM Location WHERE Place_Id = $1", [req.params.id]);
         client.release();
         res.json({ message: "Location deleted" });
@@ -341,7 +497,7 @@ app.delete("/api/admin/delete-location/:id", isAdmin, async (req, res) => {
 app.delete("/api/admin/delete-log", isAdmin, async (req, res) => {
     const { roll_no, guard_id, place_id } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("DELETE FROM Log WHERE roll_no = $1 AND Guard_Id = $2 AND Place_Id = $3", [roll_no, guard_id, place_id]);
         client.release();
         res.json({ message: "Log deleted" });
@@ -350,7 +506,7 @@ app.delete("/api/admin/delete-log", isAdmin, async (req, res) => {
 
 app.delete("/api/admin/delete-admin/:id", isAdmin, async (req, res) => {
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("DELETE FROM Admin WHERE Admin_Id = $1", [req.params.id]);
         client.release();
         res.json({ message: "Admin deleted" });
@@ -362,7 +518,7 @@ app.delete("/api/admin/delete-admin/:id", isAdmin, async (req, res) => {
 app.put("/api/admin/update-student/:id", isAdmin, async (req, res) => {
     const { name, email, hostel_name, password } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("UPDATE Student SET Name=$1, Email=$2, Hostel_Name=$3, Password=$4 WHERE Roll_No=$5",
             [name, email, hostel_name, password, req.params.id]);
         client.release();
@@ -373,7 +529,7 @@ app.put("/api/admin/update-student/:id", isAdmin, async (req, res) => {
 app.put("/api/admin/update-guard/:id", isAdmin, async (req, res) => {
     const { guard_name, password } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("UPDATE Guard SET Guard_Name=$1, Password=$2 WHERE Guard_Id=$3",
             [guard_name, password, req.params.id]);
         client.release();
@@ -384,7 +540,7 @@ app.put("/api/admin/update-guard/:id", isAdmin, async (req, res) => {
 app.put("/api/admin/update-location/:id", isAdmin, async (req, res) => {
     const { place_name } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("UPDATE Location SET Place_Name=$1 WHERE Place_Id=$2",
             [place_name, req.params.id]);
         client.release();
@@ -395,7 +551,7 @@ app.put("/api/admin/update-location/:id", isAdmin, async (req, res) => {
 app.put("/api/admin/update-log", isAdmin, async (req, res) => {
     const { roll_no, guard_id, place_id, log_type } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("UPDATE Log SET log_type=$1 WHERE roll_no=$2 AND Guard_Id=$3 AND Place_Id=$4",
             [log_type, roll_no, guard_id, place_id]);
         client.release();
@@ -406,7 +562,7 @@ app.put("/api/admin/update-log", isAdmin, async (req, res) => {
 app.put("/api/admin/update-admin/:id", isAdmin, async (req, res) => {
     const { name, department, password } = req.body;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         await client.query("UPDATE Admin SET Name=$1, Department=$2, Password=$3 WHERE Admin_Id=$4",
             [name, department, password, req.params.id]);
         client.release();
@@ -458,7 +614,7 @@ app.post("/api/mark-attendance", async (req, res) => {
     }
 
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
 
         // Fetch Location Name for Logic
         const locationResult = await client.query("SELECT Place_Name FROM Location WHERE Place_Id = $1", [place_id]);
@@ -596,7 +752,7 @@ app.post("/api/guard/manual-log", async (req, res) => {
     }
 
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
 
         // 1. Check if Student Exists
         const studentCheck = await client.query("SELECT Name FROM Student WHERE Roll_No = $1", [roll_no]);
@@ -652,7 +808,7 @@ app.get("/api/guard/recent-logs", async (req, res) => {
     if (!place_id) return res.status(400).json({ error: "Place ID required" });
 
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         // Join with Student to get Names
         const result = await client.query(`
             SELECT Log.roll_no, Student.Name, Log.log_type, Log.Timestamp 
@@ -678,7 +834,7 @@ app.get("/api/student/logs", async (req, res) => {
     }
     const roll_no = req.session.user.userRollNo;
     try {
-        const client = await pool.connect();
+        const client = await req.getClient();
         const result = await client.query(
             "SELECT * FROM Log WHERE roll_no = $1 ORDER BY Timestamp DESC LIMIT 5",
             [roll_no]
@@ -688,6 +844,69 @@ app.get("/api/student/logs", async (req, res) => {
     } catch (err) {
         console.error("Error fetching student logs:", err);
         res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// ============================================
+// SuperAdmin Endpoints
+// ============================================
+// Authenticated via SUPERADMIN_API_KEY in .env
+// These routes are excluded from tenant middleware.
+// ============================================
+
+const requireSuperAdmin = (req, res, next) => {
+    const key = req.headers['authorization']?.replace('Bearer ', '');
+    if (!key || key !== process.env.SUPERADMIN_API_KEY) {
+        return res.status(403).json({ error: "Forbidden: Invalid SuperAdmin key" });
+    }
+    next();
+};
+
+// List all registered tenants
+app.get("/api/superadmin/tenants", requireSuperAdmin, async (req, res) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query('SELECT id, institute_name, domain, schema_name, created_at, is_active FROM tenants ORDER BY created_at DESC');
+        client.release();
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error listing tenants:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+// Provision a new institute (create schema + tables + register)
+app.post("/api/superadmin/register-institute", requireSuperAdmin, async (req, res) => {
+    const { institute_name, domain, schema_name } = req.body;
+
+    if (!institute_name || !domain || !schema_name) {
+        return res.status(400).json({ error: "institute_name, domain, and schema_name are required" });
+    }
+
+    try {
+        await provisionTenant(pool, schema_name, institute_name, domain);
+        invalidateCache(domain);
+        res.json({ message: `Institute '${institute_name}' provisioned successfully`, schema_name, domain });
+    } catch (err) {
+        console.error("Provisioning error:", err);
+        res.status(500).json({ error: `Provisioning failed: ${err.message}` });
+    }
+});
+
+// Run a migration SQL across all tenant schemas
+app.post("/api/superadmin/run-migration", requireSuperAdmin, async (req, res) => {
+    const { sql } = req.body;
+
+    if (!sql) {
+        return res.status(400).json({ error: "sql field is required" });
+    }
+
+    try {
+        const results = await runMigration(pool, sql);
+        res.json(results);
+    } catch (err) {
+        console.error("Migration error:", err);
+        res.status(500).json({ error: `Migration failed: ${err.message}` });
     }
 });
 

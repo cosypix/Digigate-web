@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { apiFetch } from '../utils/api.js';
 import './student-dashboard.css';
 
 const StudentDashboard = () => {
@@ -14,9 +15,7 @@ const StudentDashboard = () => {
     const scannerRef = useRef(null);
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_Backend_URL}/api/me`, {
-            credentials: "include",
-        })
+        apiFetch('/api/me')
             .then((res) => res.json())
             .then((data) => {
                 if (data.loggedIn) {
@@ -30,7 +29,7 @@ const StudentDashboard = () => {
 
     const fetchRecentLogs = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/student/logs`, { credentials: "include" });
+            const res = await apiFetch('/api/student/logs');
             if (res.ok) {
                 const data = await res.json();
                 setRecentLogs(data);
@@ -108,12 +107,11 @@ const StudentDashboard = () => {
                 throw new Error("Invalid QR Data Structure. Missing guard_id, place_id, or timestamp.");
             }
 
-            const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/mark-attendance`, {
+            const response = await apiFetch('/api/mark-attendance', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                credentials: "include",
                 body: JSON.stringify({
                     guard_id,
                     place_id,
@@ -177,9 +175,8 @@ const StudentDashboard = () => {
     };
 
     const handleLogout = async () => {
-        await fetch(`${import.meta.env.VITE_Backend_URL}/api/logout`, {
+        await apiFetch('/api/logout', {
             method: "POST",
-            credentials: "include",
         });
         window.location.href = "/";
     };

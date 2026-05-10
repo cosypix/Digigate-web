@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeReactOnly from './qr-code.jsx';
+import { apiFetch } from '../utils/api.js';
 import './guard-page.css';
 
 const GuardPage = () => {
@@ -24,9 +25,7 @@ const GuardPage = () => {
     ];
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_Backend_URL}/api/me`, {
-            credentials: "include",
-        })
+        apiFetch('/api/me')
             .then((res) => res.json())
             .then((data) => {
                 if (data.loggedIn) {
@@ -43,12 +42,11 @@ const GuardPage = () => {
         if (selectedLocation && user) {
             const guardId = user.userGuardId;
             try {
-                const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/location`, {
+                const response = await apiFetch('/api/guard/location', {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    credentials: "include",
                     body: JSON.stringify({ guardId, location: selectedLocation }),
                 });
                 const data = await response.json();
@@ -80,9 +78,7 @@ const GuardPage = () => {
 
     const fetchRecentLogs = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/recent-logs?place_id=${selectedLocation}`, {
-                credentials: "include"
-            });
+            const res = await apiFetch(`/api/guard/recent-logs?place_id=${selectedLocation}`);
             if (res.ok) {
                 const data = await res.json();
                 setRecentLogs(data);
@@ -98,10 +94,9 @@ const GuardPage = () => {
 
         const guardId = user.userGuardId;
         try {
-            const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/guard/manual-log`, {
+            const response = await apiFetch('/api/guard/manual-log', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include",
                 body: JSON.stringify({
                     roll_no: manualRollNo,
                     guard_id: guardId,
@@ -123,9 +118,8 @@ const GuardPage = () => {
     };
 
     const handleLogout = async () => {
-        await fetch(`${import.meta.env.VITE_Backend_URL}/api/logout`, {
+        await apiFetch('/api/logout', {
             method: "POST",
-            credentials: "include",
         });
         window.location.href = "/";
         setIsLoggedIn(false);

@@ -53,7 +53,7 @@
     animation: fadeIn 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     color: var(--text-main);
     font-family: 'Outfit', 'Inter', sans-serif;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .login-card {
@@ -61,17 +61,17 @@
     backdrop-filter: blur(var(--backdrop-blur));
     -webkit-backdrop-filter: blur(var(--backdrop-blur));
     border: 1px solid var(--glass-border);
-    padding: 3rem;
+    padding: 2.5rem;
     border-radius: var(--radius-xl);
     box-shadow: var(--glass-shadow);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     text-align: center;
     position: relative;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .login-app-title {
@@ -84,31 +84,204 @@
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.02em;
     text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
-.login-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-muted);
-    margin-bottom: 1rem;
+/* ============================================
+   Role Tab Bar
+   ============================================ */
+
+.login-tabs {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
 }
+
+.login-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 60%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 3px 3px 0 0;
+    transition: transform 0.3s ease;
+}
+
+.login-tab:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.login-tab.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--text-main);
+    border-color: rgba(99, 102, 241, 0.3);
+    font-weight: 600;
+}
+
+.login-tab.active::after {
+    transform: translateX(-50%) scaleX(1);
+}
+
+.login-tab-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.login-tab-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+}
+
+/* ============================================
+   Tab Content Area
+   ============================================ */
+
+.login-tab-content {
+    animation: tabFadeIn 0.35s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+@keyframes tabFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   Google Sign-In Button
+   ============================================ */
+
+.google-btn-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem 0;
+    min-height: 44px;
+}
+
+.google-btn-placeholder {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 0.75rem;
+}
+
+/* ============================================
+   Fallback Toggle ("Having trouble?")
+   ============================================ */
+
+.login-fallback-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.2s ease;
+    font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.login-fallback-toggle:hover {
+    color: var(--secondary);
+}
+
+/* ============================================
+   Divider ("── or ──")
+   ============================================ */
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 1rem;
+    margin: 0.25rem 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--glass-border);
+}
+
+.login-divider span {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.login-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.login-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-left: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .login-input {
     width: 100%;
-    padding: 1rem 1.25rem;
+    padding: 0.9rem 1.1rem;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     color: var(--text-main);
-    font-size: 1rem;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
     box-sizing: border-box;
     font-family: inherit;
@@ -125,78 +298,123 @@
     color: var(--text-muted);
 }
 
+.login-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.25rem;
+    cursor: pointer;
+}
+
+.login-select option {
+    background-color: #0f172a;
+    color: var(--text-main);
+}
+
+.login-helper-text {
+    font-size: 0.75rem;
+    color: var(--secondary);
+    margin-top: 0.25rem;
+    margin-left: 0.25rem;
+    opacity: 0.8;
+}
+
+/* ============================================
+   Login Button
+   ============================================ */
+
 .login-btn {
     width: 100%;
-    padding: 1rem;
+    padding: 0.9rem;
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 10px 20px -5px var(--primary-glow);
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
-.login-btn:hover {
+.login-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
     filter: brightness(1.1);
 }
 
-.login-btn:active {
+.login-btn:active:not(:disabled) {
     transform: translateY(0);
 }
 
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   Error Message
+   ============================================ */
+
 .error-message {
     color: var(--danger);
-    margin-top: 1rem;
-    font-size: 0.9rem;
+    margin: 0;
+    font-size: 0.85rem;
     background: rgba(239, 68, 68, 0.1);
-    padding: 0.5rem;
+    padding: 0.75rem;
     border-radius: var(--radius-md);
     border: 1px solid rgba(239, 68, 68, 0.2);
+    text-align: center;
 }
+
+/* ============================================
+   Animations
+   ============================================ */
 
 @keyframes fadeIn {
     from {
         opacity: 0;
         transform: translateY(20px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-/* Responsive */
-/* Responsive */
+/* ============================================
+   Responsive
+   ============================================ */
+
 @media (max-width: 768px) {
     .login-container {
         position: relative;
         height: auto;
         min-height: 100vh;
-        padding: 4rem 1rem 2rem 1rem;
-        overflow-y: visible;
+        padding: 3rem 1rem 2rem 1rem;
+        overflow-y: auto;
     }
 
     .login-card {
-        padding: 2rem 1.5rem;
+        padding: 2rem 1.25rem;
         width: 100%;
         max-width: 100%;
     }
 
     .login-app-title {
-        font-size: 2.5rem;
-        margin-bottom: 1.5rem;
+        font-size: 2.25rem;
+        margin-bottom: 1rem;
     }
 
-    .login-title {
-        font-size: 1.25rem;
+    .login-tab-icon {
+        font-size: 1.1rem;
+    }
+
+    .login-tab-label {
+        font-size: 0.7rem;
     }
 }

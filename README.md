@@ -1,120 +1,131 @@
 # DigiGate Web
 
-A comprehensive web-based entry/exit management system designed for college campuses. DigiGate streamlines student attendance and movement logging at gates and hostels using QR code technology and role-based access control.
+A **multi-tenant SaaS gate management system** for college campuses. DigiGate digitizes entry/exit logging at hostel and campus gates using QR codes, with full data isolation per institute.
+
+> **For AI assistants:** Read [`CONTEXT.md`](./CONTEXT.md) for full architectural context instead of scanning the repo.
 
 ## 🚀 Features
 
+### Multi-Tenancy
+- **Schema-per-Tenant** architecture on a single PostgreSQL database
+- Automatic schema routing via subdomain or login selection
+- SuperAdmin API for provisioning new institutes
+
 ### 🎓 Student Portal
-- **Dashboard:** View personal entry/exit logs and history.
-- **QR Code Generation:** Generate unique QR codes for seamless entry/exit scanning.
-- **Profile Management:** View student details and hostel information.
+- **Google Sign-In** for seamless authentication
+- Password-based login as fallback
+- QR code scanning for entry/exit logging
+- Personal log history
 
 ### 🛡️ Guard Interface
-- **Scanner & Manual Entry:** Scan student QR codes or manually log entry/exit events.
-- **Live Feed:** Real-time view of recent logs at the assigned location.
-- **Location Management:** Update current guard station/location.
+- QR code generation for students to scan
+- Manual entry/exit logging
+- Live feed of recent logs at assigned location
 
 ### 🔑 Admin Dashboard
-- **User Management:** Full CRUD (Create, Read, Update, Delete) operations for Students, Guards, and Admins.
-- **Location Management:** Manage campus locations (Gates, Hostels, etc.).
-- **Log Monitoring:** View and manage all entry/exit logs across the campus.
-- **Statistics:** Real-time stats on student and guard counts.
+- Full CRUD for Students, Guards, Admins, Locations, and Logs
+- Real-time campus statistics
 
 ## 🛠️ Tech Stack
 
-**Frontend:**
-- **Framework:** [React](https://react.dev/) (v19)
-- **Build Tool:** [Vite](https://vitejs.dev/)
-- **Routing:** [React Router](https://reactrouter.com/) (v7)
-- **Styling:** CSS
-- **QR Utilities:** `html5-qrcode`, `qrcode`
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19 + Vite 7 |
+| Styling | Vanilla CSS (dark glassmorphism) |
+| Backend | Express.js 5 |
+| Database | PostgreSQL (Supabase) |
+| Auth | Session-based + Google OAuth |
+| QR | html5-qrcode / qrcode |
 
-**Backend:**
-- **Runtime:** [Node.js](https://nodejs.org/)
-- **Framework:** [Express.js](https://expressjs.com/)
-- **Database:** [PostgreSQL](https://www.postgresql.org/)
-- **Authentication:** Session-based (`express-session`, `cookie-parser`)
-- **Security:** `bcrypt` (password hashing), `cors`
+## ⚙️ Setup
 
-## ⚙️ Prerequisites
-
-Before you begin, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (v16 or higher recommended)
-- [PostgreSQL](https://www.postgresql.org/)
-
-## 📥 Installation
-
-### 1. Clone the Repository
+### 1. Clone & Install
 ```bash
 git clone https://github.com/abhay-006/Digigate-web.git
 cd Digigate-web
+npm install          # Frontend deps
+cd Backend && npm install  # Backend deps
 ```
 
-### 2. Frontend Setup
-Navigate to the root directory and install dependencies:
-```bash
-npm install
-```
+### 2. Configure Environment
 
-### 3. Backend Setup
-Navigate to the `Backend` directory and install dependencies:
-```bash
-cd Backend
-npm install
-```
-
-## 🗄️ Database Setup
-
-1.  Create a PostgreSQL database.
-2.  Use the `Backend/schema.sql` file to create the necessary tables.
-    ```bash
-    psql -U your_username -d your_database_name -f Backend/schema.sql
-    ```
-
-## 🔐 Configuration
-
-Create a `.env` file in the `Backend` directory with the following variables:
-
+**Frontend `.env`:**
 ```env
-# Database Configuration
+VITE_Backend_URL=http://localhost:3000
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+```
 
-host=localhost
+**Backend `Backend/.env`:**
+```env
+host=your-supabase-host
 DB_PORT=5432
-database=your_database_name
-user=your_db_username
-password=your_db_password
-
-# Server Configuration
-
-PORT=3000
-Frontend_URL=http://localhost:5173 
+database=postgres
+user=your-db-user
+password=your-db-password
+port=3000
+Frontend_URL=http://localhost:5173
 NODE_ENV=development
+SUPERADMIN_API_KEY=your-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
-> **Note:** Update `Frontend_URL` if your frontend runs on a different port.
+### 3. Database Setup
 
-## 🏃‍♂️ Running the Application
+Run the following SQL in your Supabase SQL Editor to create the master catalog and your first tenant:
 
-### Start the Backend
-Open a terminal, navigate to the `Backend` folder, and run:
-```bash
-node server.js
+```sql
+-- Master catalog
+CREATE TABLE IF NOT EXISTS tenants (
+    id SERIAL PRIMARY KEY,
+    institute_name VARCHAR(100) NOT NULL,
+    domain VARCHAR(50) UNIQUE NOT NULL,
+    schema_name VARCHAR(50) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- First tenant (example)
+-- Use the SuperAdmin API or run schema.sql manually inside a new schema
 ```
-The server will start on `http://localhost:3000`.
 
-### Start the Frontend
-Open a new terminal, navigate to the project root, and run:
+Or use the SuperAdmin API after starting the server:
 ```bash
+curl -X POST http://localhost:3000/api/superadmin/register-institute \
+  -H "Authorization: Bearer your-secret-key" \
+  -H "Content-Type: application/json" \
+  -d '{"institute_name": "IIITDM Jabalpur", "domain": "iiitdmj", "schema_name": "iiitdmj"}'
+```
+
+### 4. Run
+
+```bash
+# Terminal 1: Backend
+cd Backend && node server.js
+
+# Terminal 2: Frontend
 npm run dev
 ```
-The React app will likely start on `http://localhost:5173`.
 
-## 📖 Usage Guide
+### 5. Local Dev: Set Tenant
 
-1.  **Admin Login:** Log in as an admin to populate the database with Students, Guards, and Locations.
-2.  **Student Login:** Students use their `Roll No` and `Password` to access their dashboard and QR code.
-3.  **Guard Login:** Guards use their `Guard ID` and `Password` to access the scanning interface.
+In browser console:
+```javascript
+localStorage.setItem('tenantDomain', 'iiitdmj');
+```
+
+## 📁 Project Structure
+
+```
+├── src/pages/       # React page components (login, dashboards)
+├── src/utils/api.js # Centralized fetch with tenant header injection
+├── Backend/
+│   ├── server.js         # All API routes + tenant middleware
+│   ├── tenantManager.js  # Tenant lookup, provisioning, migrations
+│   ├── schema.sql        # Per-tenant table template
+│   └── master-schema.sql # Public tenants catalog
+└── CONTEXT.md       # Full project context for AI assistants
+```
 
 ## 📄 License
 
-This project is licensed under the ISC License.
+ISC License
