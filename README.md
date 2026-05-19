@@ -2,7 +2,6 @@
 
 A **multi-tenant SaaS gate management system** for college campuses. DigiGate digitizes entry/exit logging at hostel and campus gates using QR codes, with full data isolation per institute.
 
-> **For AI assistants:** Read [`CONTEXT.md`](./CONTEXT.md) for full architectural context instead of scanning the repo.
 
 ## 🚀 Features
 
@@ -147,7 +146,6 @@ localStorage.setItem('tenantDomain', 'iiitdmj');
 │   ├── tenantManager.js  # Tenant lookup, provisioning, migrations
 │   ├── schema.sql        # Per-tenant table template
 │   └── master-schema.sql # Public tenants catalog
-└── CONTEXT.md       # Full project context for AI assistants
 ```
 
 ## 📄 License
