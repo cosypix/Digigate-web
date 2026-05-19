@@ -18,8 +18,15 @@ A **multi-tenant SaaS gate management system** for college campuses. DigiGate di
 - Personal log history
 
 ### 🧠 "Truth Over History" Attendance Architecture
-- **Auto-Correcting Logic:** The backend prioritizes physical presence over database history. If a student's physical scan contradicts their last logged state (e.g., tailgating), the system seamlessly auto-corrects their state rather than creating deadlocks.
-- **Append-Only Ledger:** Every single entry and exit scan generates a distinct row with a unique `log_id`, ensuring a complete and unalterable chronological audit trail.
+The system utilizes a robust, auto-correcting algorithm to handle campus movement, prioritizing physical presence over historical database state to eliminate deadlocks (e.g., when a student tailgates or misses a scan).
+
+**The Logic Flow:**
+1. **Rapid Debounce**: The system fetches the absolute most recent log for the student globally. If the scan occurred within the last 60 seconds, it is blocked as spam.
+2. **Global State Evaluation**: Instead of checking history at a specific gate, the system checks the student's *Global Last-Known State*.
+3. **Rule A (Strict Block)**: If the student attempts the *exact same action* at the *exact same location* (e.g., scanning 'Entry' at a Hostel when they just scanned 'Entry' at that same Hostel), the scan is blocked.
+4. **Missed Scan Recovery**: All other scan combinations (e.g., scanning 'Entry' at a Hostel when the database says they are outside the Main Gate) are treated as implicit evidence of a missed previous scan. The system prioritizes the physical truth of the current scan, allows it, and corrects their state.
+5. **14-Hour Reset**: If the last scan was over 14 hours ago, the system treats the state as a blank slate and allows any action.
+6. **Append-Only Ledger:** Every single entry and exit scan generates a distinct row with a unique `log_id`, ensuring a complete and unalterable chronological audit trail.
 
 ### 🛡️ Guard Interface
 - QR code generation for students to scan
