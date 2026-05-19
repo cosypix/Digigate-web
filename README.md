@@ -71,6 +71,14 @@ VITE_Backend_URL=http://localhost:3000
 VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
 
+**Mobile `.env.mobile` (Capacitor Android):**
+```env
+# Use localhost if using ADB reverse tunneling
+# Use your LAN IP (e.g., http://192.168.1.100:3000) if testing over Wi-Fi
+VITE_Backend_URL=http://localhost:3000
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+```
+
 **Backend `Backend/.env`:**
 ```env
 host=your-supabase-host
