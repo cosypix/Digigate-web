@@ -42,9 +42,25 @@ isConnected().then(connected => {
     }
 });
 
+// CORS: Allow web frontend, Capacitor mobile app, and LAN dev origins
+const allowedOrigins = [
+    process.env.Frontend_URL,           // http://localhost:5173 (web dev)
+    'https://localhost',                 // Capacitor Android (androidScheme: https)
+    'capacitor://localhost',             // Capacitor iOS
+    'http://localhost',                  // Capacitor fallback
+];
+
 app.use(
     cors({
-        origin: `${process.env.Frontend_URL}`,
+        origin: function (origin, callback) {
+            // Allow requests with no origin (mobile apps, curl, server-to-server)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            // Reject unknown origins
+            return callback(new Error('Not allowed by CORS'));
+        },
         credentials: true,
     })
 );
@@ -624,11 +640,10 @@ app.post("/api/mark-attendance", async (req, res) => {
         }
         const placeName = locationResult.rows[0].place_name;
 
-        // 2. State Validation & 14-Hour Rule
-        // We check the LAST log for this specific user AND place.
+        // 2. Truth Over History: Fetch Global State (NO Place_Id filter)
         const lastLogResult = await client.query(
-            "SELECT log_type, Timestamp FROM Log WHERE roll_no = $1 AND Place_Id = $2 ORDER BY Timestamp DESC LIMIT 1",
-            [roll_no, place_id]
+            "SELECT Place_Id, log_type, Timestamp FROM Log WHERE roll_no = $1 ORDER BY Timestamp DESC LIMIT 1",
+            [roll_no]
         );
 
         let canScan = true;
@@ -639,57 +654,31 @@ app.post("/api/mark-attendance", async (req, res) => {
         if (lastLogResult.rows.length > 0) {
             const lastLog = lastLogResult.rows[0];
             const lastLogTime = new Date(lastLog.timestamp).getTime();
-            const hoursDiff = (serverTime - lastLogTime) / (1000 * 60 * 60);
-            const isLastEntry = lastLog.log_type.endsWith('Entry');
+            const serverTime = Date.now();
+            const timeDiffSec = (serverTime - lastLogTime) / 1000;
+            const hoursDiff = timeDiffSec / 3600;
+            const lastLogScanType = lastLog.log_type.endsWith('Entry') ? 'Entry' : 'Exit';
 
-            console.log(`[DEBUG] Last Log Found: Type: ${lastLog.log_type}, Time: ${lastLog.timestamp}, isLastEntry: ${isLastEntry}, HoursDiff: ${hoursDiff.toFixed(2)}`);
+            console.log(`[DEBUG] Global Last Log: Place=${lastLog.place_id}, Type=${lastLog.log_type}, SecsAgo=${timeDiffSec.toFixed(0)}`);
 
-
-            // 14-Hour Rule Logic
-            // If it's been > 14 hours AND user is NOT in their own hostel
-            // We assume they left and allow "Entry" again (Auto-Reset)
-            const isStudentHostel = placeName.toLowerCase().includes(studentHostel ? studentHostel.toLowerCase() : "###"); // ### won't match
-
-            if (hoursDiff > 14 && !isStudentHostel && isLastEntry) {
-                // We treat this as "No Record" effectively, allowing Entry.
-                // If they try to Exit, we might strictly block or allow.
-                // Robustness: If they try to Enter, allow. If Exit, maybe they stayed >14h? 
-                // Let's stick to the prompt: "assume they left and allow them to scan 'Entry' again".
-                if (scan_type === 'Exit') {
-                    // Start fresh? Or block?
-                    // User said: "prevent deadlock".
-                    // If they are scanning Exit after 14h, arguably they are just leaving now.
-                    // But if we auto-reset, they are "Outside".
-                    // Let's allow Entry.
-                    if (scan_type === 'Exit') {
-                        // They are technically "Outside" by our rule, so Exit is invalid?
-                        // "Auto assume they left". So they are OUT.
-                        canScan = false;
-                        message = "System auto-exited you due to timeout. You must Enter again.";
-                    }
-                }
-                // If Entry, we allow (canScan stays true), effectively overwriting the old 'Entry' with new 'Entry'
-            } else {
-                // Strict State Check
-                if (scan_type === 'Entry') {
-                    if (isLastEntry) {
-                        canScan = false;
-                        message = "You are already marked Inside. Please Exit first.";
-                    }
-                } else if (scan_type === 'Exit') {
-                    if (!isLastEntry) {
-                        canScan = false;
-                        message = "You are not marked Inside. Please Enter first.";
-                    }
-                }
-            }
-        } else {
-            console.log("[DEBUG] No history found for this location.");
-            // No history for this location
-            if (scan_type === 'Exit') {
+            // Step 1: Rapid Debounce (Anti-Spam)
+            if (timeDiffSec < 60) {
                 canScan = false;
-                message = "You have no entry record here. Please Enter first.";
+                message = "Scan already recorded. Please wait a moment.";
             }
+            // Step 2 & 3: Evaluate and Auto-Correct
+            else if (hoursDiff <= 14) {
+                // Rule A: The "Already Did That" Check (Strict Block)
+                // If they are doing the exact same action at the exact same place within 14 hours
+                if (lastLog.place_id === place_id && lastLogScanType === scan_type) {
+                    canScan = false;
+                    message = `You are already marked ${scan_type === 'Entry' ? 'Inside' : 'Outside'} this location.`;
+                }
+                // All other scenarios (Rule B, Rule C) are implicit missed scan recoveries and are ALLOWED.
+            }
+            // Rule D: > 14 hours (Reset) allows the scan automatically.
+        } else {
+             console.log("[DEBUG] No history found for this student. First time scan.");
         }
 
         if (!canScan) {
@@ -697,27 +686,18 @@ app.post("/api/mark-attendance", async (req, res) => {
             client.release();
             return res.status(400).json({ error: message });
         }
-        console.log("[DEBUG] Scan Allowed.");
+        console.log("[DEBUG] Scan Allowed by Truth Over History.");
 
         // 3. Determine Log Type Prefix
         let prefix = "";
-        // Simple heuristic map (Case insensitive check)
         const lowerPlace = placeName.toLowerCase();
         if (lowerPlace.includes("main gate")) prefix = "MG";
-        else if (lowerPlace.includes("aryabhatta")) prefix = "A";
-        else if (lowerPlace.includes("maa saraswati")) prefix = "A"; // Assuming same prefix for hostels as per prompt? Or unique? User said "Hostel -> A"
-        else if (lowerPlace.includes("vashistha")) prefix = "A";
-        else if (lowerPlace.includes("vivekananda")) prefix = "A";
-        else if (lowerPlace.includes("panini")) prefix = "A";
-        else if (lowerPlace.includes("nagarjuna")) prefix = "A";
-        // Add more mappings as needed
+        else prefix = "A"; // Default for hostels/others
 
         const finalLogType = `${prefix}${scan_type}`;
 
-        // 4. Upsert (Insert or Update)
+        // 4. Insert New Log Row (Appends to history)
         const timestamp = new Date();
-
-        // Postgres UPSERT: ON CONFLICT (pkey) DO UPDATE
         await client.query(
             `INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) 
              VALUES ($1, $2, $3, $4, $5)`,
@@ -786,10 +766,10 @@ app.post("/api/guard/manual-log", async (req, res) => {
         const finalLogType = `${prefix}${scan_type}`;
         const timestamp = new Date();
 
-        // Force Update/Insert
+        // Insert new manual log
         await client.query(
             `INSERT INTO Log (roll_no, Guard_Id, Place_Id, log_type, Timestamp) 
-         VALUES ($1, $2, $3, $4, $5)`,
+             VALUES ($1, $2, $3, $4, $5)`,
             [roll_no, guard_id, place_id, finalLogType, timestamp]
         );
 

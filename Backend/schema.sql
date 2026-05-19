@@ -35,12 +35,12 @@ CREATE TABLE Admin (
 );
 
 CREATE TABLE Log (
+    log_id SERIAL PRIMARY KEY,
     roll_no VARCHAR(20) NOT NULL,
     Guard_Id VARCHAR(20) NOT NULL,
     Place_Id VARCHAR(20) NOT NULL,
     log_type VARCHAR(15) NOT NULL,
     Timestamp TIMESTAMP NOT NULL,
-    PRIMARY KEY (roll_no, Guard_Id, Place_Id),
     FOREIGN KEY (roll_no) REFERENCES Student(Roll_No),
     FOREIGN KEY (Place_Id) REFERENCES Location(Place_Id),
     FOREIGN KEY (Guard_Id) REFERENCES Guard(Guard_Id)

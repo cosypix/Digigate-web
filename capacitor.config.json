@@ -1,0 +1,16 @@
+{
+  "appId": "com.institute.digigate",
+  "appName": "DigiGate",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "plugins": {
+    "SocialLogin": {
+      "google": {
+        "webClientId": "842213268035-0s9fru7jpke9fu8da3j6gm9v8q1qd9im.apps.googleusercontent.com"
+      }
+    }
+  }
+}

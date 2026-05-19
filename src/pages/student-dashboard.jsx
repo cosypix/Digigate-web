@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import { apiFetch } from '../utils/api.js';
 import './student-dashboard.css';
 
 const StudentDashboard = () => {
+    const navigate = useNavigate();
     const [studentDetails, setStudentDetails] = useState(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
@@ -22,7 +24,7 @@ const StudentDashboard = () => {
                     setStudentDetails(data.user);
                     fetchRecentLogs();
                 } else {
-                    window.location.href = "/";
+                    navigate("/");
                 }
             });
     }, []);
@@ -178,7 +180,7 @@ const StudentDashboard = () => {
         await apiFetch('/api/logout', {
             method: "POST",
         });
-        window.location.href = "/";
+        navigate("/");
     };
 
     return (

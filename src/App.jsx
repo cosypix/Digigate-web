@@ -1,13 +1,20 @@
+import { useEffect } from 'react'
 import './App.css'
-import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import LoginPage from './pages/login.jsx'
 import AdminDashboard from './pages/admin-dashboard.jsx'
 import GuardPage from './pages/guard-page.jsx'
 import LandingPage from './pages/landing-page.jsx'
 import StudentDashboard from './pages/student-dashboard.jsx'
+import { setupBackButton } from './utils/capacitor-back-button.js'
 
 
 function App() {
+  // Register Android hardware back-button handler on mount
+  useEffect(() => {
+    setupBackButton();
+  }, []);
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -20,3 +27,4 @@ function App() {
 }
 
 export default App
+

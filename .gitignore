@@ -8,10 +8,16 @@ pnpm-debug.log*
 lerna-debug.log*
 
 .env
+.env.mobile
+.env.production
 node_modules
 dist
 dist-ssr
 *.local
+
+# Capacitor native shells (auto-generated)
+android
+ios
 
 # Editor directories and files
 .vscode/*
@@ -23,3 +29,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.apk

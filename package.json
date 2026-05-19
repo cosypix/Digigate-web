@@ -6,10 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:mobile": "vite build --mode mobile",
+    "build:prod": "vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.3.4",
+    "@capgo/capacitor-social-login": "^8.3.22",
     "html5-qrcode": "^2.3.8",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
@@ -17,6 +23,7 @@
     "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
     "@eslint/js": "^9.36.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",

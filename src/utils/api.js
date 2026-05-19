@@ -4,18 +4,29 @@
 // Automatically injects the X-Tenant-Domain header
 // into every API request. The domain is extracted from
 // the subdomain (production) or localStorage (local dev).
+// Capacitor-aware: in native apps, always uses localStorage.
 // ============================================
+
+import { Capacitor } from '@capacitor/core';
 
 const BACKEND_URL = import.meta.env.VITE_Backend_URL;
 
 /**
  * Extract the tenant domain from the current hostname.
  * Production: iiitdmj.digigate.com → 'iiitdmj'
+ * Native app: always reads from localStorage('tenantDomain')
  * Local dev fallback: reads from localStorage('tenantDomain')
  *
  * @returns {string|null}
  */
 export function getTenantDomain() {
+    // In a Capacitor native app, there is no meaningful hostname —
+    // the WebView runs on localhost or a capacitor:// scheme.
+    // Always use localStorage in native context.
+    if (Capacitor.isNativePlatform()) {
+        return localStorage.getItem('tenantDomain') || null;
+    }
+
     const hostname = window.location.hostname;
 
     // Production: extract subdomain from *.digigate.com
@@ -53,3 +64,4 @@ export async function apiFetch(path, options = {}) {
         credentials: 'include',
     });
 }
+
