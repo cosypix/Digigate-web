@@ -12,19 +12,28 @@ A **multi-tenant SaaS gate management system** for college campuses. DigiGate di
 - SuperAdmin API for provisioning new institutes
 
 ### 🎓 Student Portal
-- **Google Sign-In** for seamless authentication
+- **Google Sign-In** for seamless authentication (Web & Native Android)
 - Password-based login as fallback
 - QR code scanning for entry/exit logging
 - Personal log history
 
+### 🧠 "Truth Over History" Attendance Architecture
+- **Auto-Correcting Logic:** The backend prioritizes physical presence over database history. If a student's physical scan contradicts their last logged state (e.g., tailgating), the system seamlessly auto-corrects their state rather than creating deadlocks.
+- **Append-Only Ledger:** Every single entry and exit scan generates a distinct row with a unique `log_id`, ensuring a complete and unalterable chronological audit trail.
+
 ### 🛡️ Guard Interface
 - QR code generation for students to scan
-- Manual entry/exit logging
+- Manual entry/exit logging (with seamless append-only integration)
 - Live feed of recent logs at assigned location
 
 ### 🔑 Admin Dashboard
 - Full CRUD for Students, Guards, Admins, Locations, and Logs
 - Real-time campus statistics
+
+### 📱 Native Mobile Support (Capacitor)
+- Packaged as a native Android APK via Ionic Capacitor.
+- Utilizes `@capgo/capacitor-social-login` for native Google OAuth.
+- Handles custom HTTP schemes to ensure secure cross-origin session persistence.
 
 ## 🛠️ Tech Stack
 
