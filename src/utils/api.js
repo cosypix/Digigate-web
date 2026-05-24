@@ -5,11 +5,15 @@
 // into every API request. The domain is extracted from
 // the subdomain (production) or localStorage (local dev).
 // Capacitor-aware: in native apps, always uses localStorage.
+//
+// Also handles token-based session auth for mobile apps
+// where third-party cookies are blocked by Android WebView.
 // ============================================
 
 import { Capacitor } from '@capacitor/core';
 
 const BACKEND_URL = import.meta.env.VITE_Backend_URL;
+const SESSION_TOKEN_KEY = 'digigate_session_token';
 
 /**
  * Extract the tenant domain from the current hostname.
@@ -43,7 +47,33 @@ export function getTenantDomain() {
 }
 
 /**
+ * Save the session token returned by the backend on login.
+ * @param {string} token - The sessionID returned by the backend
+ */
+export function saveSessionToken(token) {
+    if (token) {
+        localStorage.setItem(SESSION_TOKEN_KEY, token);
+    }
+}
+
+/**
+ * Clear the session token on logout.
+ */
+export function clearSessionToken() {
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
+/**
+ * Get the stored session token.
+ * @returns {string|null}
+ */
+function getSessionToken() {
+    return localStorage.getItem(SESSION_TOKEN_KEY) || null;
+}
+
+/**
  * Centralized fetch wrapper that injects tenant headers automatically.
+ * Also injects Authorization: Bearer <token> for mobile session fallback.
  * Drop-in replacement for fetch() — same API, same return type.
  *
  * @param {string} path - API path (e.g., '/api/login')
@@ -52,10 +82,12 @@ export function getTenantDomain() {
  */
 export async function apiFetch(path, options = {}) {
     const domain = getTenantDomain();
+    const token = getSessionToken();
 
     const headers = {
         ...options.headers,
         ...(domain ? { 'X-Tenant-Domain': domain } : {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     };
 
     return fetch(`${BACKEND_URL}${path}`, {

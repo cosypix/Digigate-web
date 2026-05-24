@@ -83,6 +83,35 @@ app.use(
 );
 
 // ============================================
+// Token-Based Session Fallback (for Capacitor/Mobile)
+// ============================================
+// Android WebView blocks third-party cookies in cross-origin
+// requests. This middleware checks for an Authorization: Bearer
+// header containing the session ID and loads the session manually
+// when the cookie-based session is empty.
+// ============================================
+app.use((req, res, next) => {
+    // If session already has a user (cookie worked), skip
+    if (req.session && req.session.user) return next();
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return next();
+
+    const sessionId = authHeader.replace('Bearer ', '');
+    if (!sessionId) return next();
+
+    // Manually load the session from the store using the token
+    const store = req.sessionStore;
+    store.get(sessionId, (err, sessionData) => {
+        if (err || !sessionData) return next();
+
+        // Attach the session data to the current request
+        req.session.user = sessionData.user;
+        next();
+    });
+});
+
+// ============================================
 // Tenant Resolution Middleware
 // ============================================
 // Resolves the tenant from session or X-Tenant-Domain header,
@@ -197,7 +226,7 @@ app.post("/api/login/student", async (req, res) => {
                     role: 'student'
                 };
                 client.release();
-                return res.json({ message: "Login Successful", user: req.session.user, role: 'student' });
+                return res.json({ message: "Login Successful", user: req.session.user, role: 'student', sessionToken: req.sessionID });
             } catch (tokenErr) {
                 client.release();
                 console.error("Google token verification failed:", tokenErr.message);
@@ -231,7 +260,7 @@ app.post("/api/login/student", async (req, res) => {
             role: 'student'
         };
         client.release();
-        return res.json({ message: "Login Successful", user: req.session.user, role: 'student' });
+        return res.json({ message: "Login Successful", user: req.session.user, role: 'student', sessionToken: req.sessionID });
     } catch (err) {
         console.error("Student login error:", err);
         res.status(500).json({ error: "Server Error" });
@@ -264,7 +293,7 @@ app.post("/api/login/guard", async (req, res) => {
             role: 'guard'
         };
         client.release();
-        return res.json({ message: "Login Successful", user: req.session.user, role: 'guard' });
+        return res.json({ message: "Login Successful", user: req.session.user, role: 'guard', sessionToken: req.sessionID });
     } catch (err) {
         console.error("Guard login error:", err);
         res.status(500).json({ error: "Server Error" });
@@ -298,7 +327,7 @@ app.post("/api/login/admin", async (req, res) => {
             role: 'admin'
         };
         client.release();
-        return res.json({ message: "Login Successful", user: req.session.user, role: 'admin' });
+        return res.json({ message: "Login Successful", user: req.session.user, role: 'admin', sessionToken: req.sessionID });
     } catch (err) {
         console.error("Admin login error:", err);
         res.status(500).json({ error: "Server Error" });

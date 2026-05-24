@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
-import { apiFetch } from '../utils/api.js';
+import { apiFetch, clearSessionToken } from '../utils/api.js';
 import './student-dashboard.css';
 
 const StudentDashboard = () => {
@@ -180,6 +180,7 @@ const StudentDashboard = () => {
         await apiFetch('/api/logout', {
             method: "POST",
         });
+        clearSessionToken();
         navigate("/");
     };
 

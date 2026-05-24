@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
-import { apiFetch, getTenantDomain } from "../utils/api.js";
+import { apiFetch, getTenantDomain, saveSessionToken } from "../utils/api.js";
 import './login.css';
 
 const ROLES = [
@@ -98,6 +98,8 @@ function LoginPage() {
         return;
       }
 
+      // Save session token for mobile auth fallback
+      if (data.sessionToken) saveSessionToken(data.sessionToken);
       handleLoginSuccess(data.role);
     } catch (err) {
       console.error(err);
@@ -227,6 +229,8 @@ function LoginPage() {
         return;
       }
 
+      // Save session token for mobile auth fallback
+      if (data.sessionToken) saveSessionToken(data.sessionToken);
       handleLoginSuccess(data.role);
     } catch (err) {
       console.error(err);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiFetch } from '../utils/api.js';
+import { apiFetch, clearSessionToken } from '../utils/api.js';
 import './admin-dashboard.css';
 
 
@@ -204,6 +204,7 @@ const AdminDashboard = () => {
 
     const handleLogout = async () => {
         await apiFetch('/api/logout', { method: 'POST' });
+        clearSessionToken();
         navigate('/login');
     };
 

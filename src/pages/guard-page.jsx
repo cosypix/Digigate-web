@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeReactOnly from './qr-code.jsx';
-import { apiFetch } from '../utils/api.js';
+import { apiFetch, clearSessionToken } from '../utils/api.js';
 import './guard-page.css';
 
 const GuardPage = () => {
@@ -121,6 +121,7 @@ const GuardPage = () => {
         await apiFetch('/api/logout', {
             method: "POST",
         });
+        clearSessionToken();
         window.location.href = "/";
         setIsLoggedIn(false);
         setSubmitted(false);
